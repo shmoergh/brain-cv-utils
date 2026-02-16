@@ -3,6 +3,7 @@
 
 #include <cstdint>
 
+#include "attenuverter.h"
 #include "brain-io/audio-cv-in.h"
 #include "brain-io/audio-cv-out.h"
 #include "brain-io/pulse.h"
@@ -34,13 +35,7 @@ private:
 	void set_mode(Mode mode);
 	void update_mode_leds();
 
-	// Mode update dispatchers
-	void update_attenuverter();
-	void update_precision_adder();
-	void update_slew();
-	void update_ad_envelope();
-
-	// Button A handlers per mode
+	// Button A handler
 	void on_button_a_press();
 
 	// Hardware
@@ -51,6 +46,9 @@ private:
 	brain::io::AudioCvIn cv_in_;
 	brain::io::AudioCvOut cv_out_;
 	brain::io::Pulse pulse_;
+
+	// Mode handlers
+	Attenuverter attenuverter_;
 
 	// State
 	Mode current_mode_;
