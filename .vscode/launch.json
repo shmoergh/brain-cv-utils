@@ -1,7 +1,7 @@
 {
     "version": "0.2.0",
     "configurations": [
-        {   "name": "Pico Debug",
+        {   "name": "Pico Debug (RP2040)",
             "device": "RP2040",
             "gdbPath": "arm-none-eabi-gdb",
             "cwd": "${workspaceRoot}",
@@ -11,10 +11,30 @@
             "type": "cortex-debug",
             "servertype": "openocd",
             "configFiles": [
-                "interface/picoprobe.cfg",
+                "interface/cmsis-dap.cfg",
                 "target/rp2040.cfg"
             ],
-            "svdFile": "${env:PICO_SDK_PATH}/src/rp2040/hardware_regs/rp2040.svd",
+            "svdFile": "${env:PICO_SDK_PATH}/src/rp2040/hardware_regs/RP2040.svd",
+            "runToEntryPoint": "main",
+            "postRestartCommands": [
+                "break main",
+                "continue"
+            ]
+        },
+        {   "name": "Pico 2 Debug (RP2350)",
+            "device": "RP2350",
+            "gdbPath": "arm-none-eabi-gdb",
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceFolder}/build/brain-cv-utils.elf",
+            "preLaunchTask": "CMake Build",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "configFiles": [
+                "interface/cmsis-dap.cfg",
+                "target/rp2350.cfg"
+            ],
+            "svdFile": "${env:PICO_SDK_PATH}/src/rp2350/hardware_regs/RP2350.svd",
             "runToEntryPoint": "main",
             "postRestartCommands": [
                 "break main",

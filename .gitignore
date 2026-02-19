@@ -3,5 +3,6 @@ _deps
 cmake-*
 build
 .DS_Store
+.cache
 *.lck
 **/ai
