@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include "attenuverter.h"
+#include "cv-mixer.h"
 #include "precision-adder.h"
 #include "brain-io/audio-cv-in.h"
 #include "brain-io/audio-cv-out.h"
@@ -12,13 +13,14 @@
 #include "brain-ui/leds.h"
 #include "brain-ui/pots.h"
 
-constexpr uint8_t kNumModes = 4;
+constexpr uint8_t kNumModes = 5;
 
 enum class Mode : uint8_t {
 	kAttenuverter = 0,
 	kPrecisionAdder = 1,
 	kSlew = 2,
-	kAdEnvelope = 3
+	kAdEnvelope = 3,
+	kCvMixer = 4
 };
 
 class CvUtils {
@@ -48,6 +50,7 @@ private:
 	// Mode handlers
 	Attenuverter attenuverter_;
 	PrecisionAdder precision_adder_;
+	CvMixer cv_mixer_;
 
 	// State
 	Mode current_mode_;
