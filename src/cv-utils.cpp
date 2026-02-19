@@ -98,6 +98,9 @@ void CvUtils::update() {
 		case Mode::kAdEnvelope:
 			// TODO: Phase 5
 			break;
+		case Mode::kCvMixer:
+			cv_mixer_.update(pots_, cv_in_, cv_out_, leds_);
+			break;
 	}
 }
 
@@ -126,10 +129,12 @@ void CvUtils::exit_mode_select() {
 }
 
 Mode CvUtils::pot_to_mode(uint8_t pot_value) {
-	if (pot_value < 64) return Mode::kAttenuverter;
-	if (pot_value < 128) return Mode::kPrecisionAdder;
-	if (pot_value < 192) return Mode::kSlew;
-	return Mode::kAdEnvelope;
+	// 5 modes: divide 0-255 into 5 zones of ~51 each
+	if (pot_value < 51) return Mode::kAttenuverter;
+	if (pot_value < 102) return Mode::kPrecisionAdder;
+	if (pot_value < 153) return Mode::kSlew;
+	if (pot_value < 204) return Mode::kAdEnvelope;
+	return Mode::kCvMixer;
 }
 
 void CvUtils::set_mode(Mode mode) {
