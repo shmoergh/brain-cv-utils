@@ -124,7 +124,8 @@ void CvUtils::update() {
 									button_b_pressed_, leds_, led_controller_);
 			break;
 		case Mode::kSlew:
-			// TODO: Phase 4 (slew limiter)
+			slew_limiter_.update(pots_, cv_in_, cv_out_, calibration_,
+								 button_b_pressed_, leds_, led_controller_);
 			break;
 		case Mode::kAdEnvelope:
 			// TODO: Phase 5

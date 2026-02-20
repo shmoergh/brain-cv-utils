@@ -32,7 +32,19 @@ Add precise voltage offsets for octave transposition.
 | LEDs 1–3 | CH1 offset bar (direction = +/−, brightness = magnitude) |
 | LEDs 4–6 | CH2 offset bar (same as above) |
 
-### 3. Slew Limiter *(coming soon)*
+### 3. Slew Limiter
+Smooth out CV transitions with independent rise and fall times.
+
+| Control | Function |
+|---------|----------|
+| Pot 1 | Rise time (0ms–~2s, logarithmic) |
+| Pot 2 | Fall time (0ms–~2s, logarithmic) |
+| Pot 3 | Shape — linear (left) to exponential (right) |
+| Button B | Toggle linked mode (Pot 1 controls both rise and fall) |
+| CV In A/B | Input signals |
+| CV Out A/B | Slewed signals |
+| LEDs 1–3 | CH1 output VU |
+| LEDs 4–6 | CH2 output VU |
 ### 4. AD Envelope *(coming soon)*
 
 ### 5. CV Mixer

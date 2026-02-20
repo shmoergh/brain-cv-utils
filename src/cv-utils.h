@@ -8,6 +8,7 @@
 #include "cv-mixer.h"
 #include "led-controller.h"
 #include "precision-adder.h"
+#include "slew-limiter.h"
 #include "brain-io/audio-cv-in.h"
 #include "brain-io/audio-cv-out.h"
 #include "brain-io/pulse.h"
@@ -57,6 +58,7 @@ private:
 	// Mode handlers
 	Attenuverter attenuverter_;
 	PrecisionAdder precision_adder_;
+	SlewLimiter slew_limiter_;
 	CvMixer cv_mixer_;
 
 	// State
