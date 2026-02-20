@@ -37,8 +37,8 @@ private:
 	static constexpr uint16_t kAdcSpan = kAdcAtPlus5V - kAdcAtMinus5V;
 
 	// Anti-jitter smoothing (small deadband, no extra lag by default).
-	static constexpr int32_t kSmoothingDeadbandMv = 3;
-	static constexpr uint16_t kSmoothingAlphaQ15 = 4096;	// 0.125
+	static constexpr int32_t kSmoothingDeadbandMv = 7;
+	static constexpr uint16_t kSmoothingAlphaQ15 = 16384;	// 0.5
 
 	VoltageSmoother smoother_ch1_{kSmoothingDeadbandMv, kSmoothingAlphaQ15};
 	VoltageSmoother smoother_ch2_{kSmoothingDeadbandMv, kSmoothingAlphaQ15};
