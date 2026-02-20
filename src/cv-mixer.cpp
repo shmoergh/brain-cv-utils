@@ -11,7 +11,8 @@ float clampf(float v, float lo, float hi) {
 }
 
 void CvMixer::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
-					  brain::io::AudioCvOut& cv_out, brain::ui::Leds& leds) {
+					  brain::io::AudioCvOut& cv_out, brain::ui::Leds& leds,
+					  bool allow_led_updates) {
 	// Read input voltages (AC coupled)
 	float in_a = cv_in.get_voltage_channel_a();
 	float in_b = cv_in.get_voltage_channel_b();
@@ -34,6 +35,10 @@ void CvMixer::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
 	// Output the same mix to both channels
 	cv_out.set_voltage(brain::io::AudioCvOutChannel::kChannelA, out);
 	cv_out.set_voltage(brain::io::AudioCvOutChannel::kChannelB, out);
+
+	if (!allow_led_updates) {
+		return;
+	}
 
 	// VU LEDs: left 3 for input A level, right 3 for input B level
 	update_vu_leds(in_a * level_a * main_level, kLedsCh1, leds);

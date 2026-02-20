@@ -26,11 +26,12 @@ Add precise voltage offsets for octave transposition.
 |---------|----------|
 | Pot 1 | CH1 octave offset — quantized −4V to +4V in 1V steps |
 | Pot 2 | CH2 octave offset — same as above |
-| Pot 3 | Fine tune — ±1 semitone, applied to both channels |
+| Pot 3 | Fine tune — ±5 semitones, applied to both channels |
 | CV In A/B | Input signals (1V/oct) |
-| CV Out A/B | Input + offset |
+| CV Out A/B | Input + offset (with calibration applied) |
 | LEDs 1–3 | CH1 offset bar (direction = +/−, brightness = magnitude) |
 | LEDs 4–6 | CH2 offset bar (same as above) |
+
 ### 3. Slew Limiter *(coming soon)*
 ### 4. AD Envelope *(coming soon)*
 
@@ -47,11 +48,29 @@ Two-input mixer with per-channel level and master output control.
 | LEDs 1–3 | Input A contribution VU |
 | LEDs 4–6 | Input B contribution VU |
 
-## Switching Modes
+## Controls
 
-1. **Hold both buttons** — enters mode select (LEDs 1–4 show current mode)
-2. **Turn Pot 1** — selects mode (pot range divided into 5 zones)
-3. **Release both buttons** — confirms selection, LEDs return to VU meters
+### Switching Modes
+
+**Tap Button A** — cycles through modes. LED briefly shows current mode (1–5).
+
+### Button B
+
+Reserved for per-mode features (e.g. DC/AC coupling toggle, linked mode).
+
+### Calibration Mode
+
+**Hold A + B (long press, ~1.5s)** — enters calibration mode. All LEDs blink.
+
+In calibration mode:
+- **Pot 1** — Output A scale (gain trim)
+- **Pot 2** — Output B scale (gain trim)
+- **Hold Button A + Pot 3** — Output A offset
+- **Hold Button B + Pot 3** — Output B offset
+
+**Tap A + B together** — exits calibration mode (saves to flash).
+
+Calibration values persist across power cycles and apply to all modes that use CV passthrough (Precision Adder, Slew Limiter).
 
 ## Build
 

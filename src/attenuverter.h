@@ -11,7 +11,8 @@
 class Attenuverter {
 public:
 	void update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
-				brain::io::AudioCvOut& cv_out, brain::ui::Leds& leds);
+				brain::io::AudioCvOut& cv_out, brain::ui::Leds& leds,
+				bool allow_led_updates = true);
 
 private:
 	static constexpr uint8_t kPotAttenCh1 = 0;

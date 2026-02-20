@@ -14,7 +14,8 @@ int16_t clamp16(int16_t v, int16_t lo, int16_t hi) {
 }
 
 void Attenuverter::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
-						  brain::io::AudioCvOut& cv_out, brain::ui::Leds& leds) {
+						  brain::io::AudioCvOut& cv_out, brain::ui::Leds& leds,
+						  bool allow_led_updates) {
 	// Pots: 0-255, ADC/DAC: 0-4095
 
 	// Attenuation: pot 0 → -256, pot 128 → 0, pot 255 → +254
@@ -42,6 +43,10 @@ void Attenuverter::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
 					   static_cast<float>(dac_ch1) * 10.0f / kDacMax);
 	cv_out.set_voltage(brain::io::AudioCvOutChannel::kChannelB,
 					   static_cast<float>(dac_ch2) * 10.0f / kDacMax);
+
+	if (!allow_led_updates) {
+		return;
+	}
 
 	// VU meter LEDs: 3 per channel, bipolar display
 	update_vu_leds(static_cast<int16_t>(dac_ch1) - kDacCenter, kLedsCh1, leds);
