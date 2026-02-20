@@ -8,13 +8,14 @@
 #include "brain-io/audio-cv-out.h"
 #include "brain-ui/leds.h"
 #include "brain-ui/pots.h"
+#include "led-controller.h"
 
 class PrecisionAdder {
 public:
 	void update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
-				brain::io::AudioCvOut& cv_out, brain::ui::Leds& leds,
+				brain::io::AudioCvOut& cv_out,
 				Calibration& calibration, bool button_b_pressed,
-				bool allow_led_updates = true);
+				brain::ui::Leds& leds, LedController& led_controller);
 
 private:
 	static constexpr uint8_t kPotOctaveCh1 = 0;
@@ -34,12 +35,6 @@ private:
 	static constexpr uint16_t kAdcAtPlus5V = 3723;
 	static constexpr uint16_t kAdcSpan = kAdcAtPlus5V - kAdcAtMinus5V;
 
-	// LEDs: 3 per channel for offset display
-	static constexpr uint8_t kLedsCh1[3] = {0, 1, 2};
-	static constexpr uint8_t kLedsCh2[3] = {3, 4, 5};
-
-	static void update_offset_leds(int8_t octave, const uint8_t led_indices[3],
-									brain::ui::Leds& leds);
 };
 
 #endif  // PRECISION_ADDER_H_

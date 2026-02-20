@@ -6,6 +6,7 @@
 #include "attenuverter.h"
 #include "calibration.h"
 #include "cv-mixer.h"
+#include "led-controller.h"
 #include "precision-adder.h"
 #include "brain-io/audio-cv-in.h"
 #include "brain-io/audio-cv-out.h"
@@ -35,8 +36,6 @@ private:
 	// Mode cycling
 	void next_mode();
 	void set_mode(Mode mode);
-	void update_mode_leds();
-	void update_mode_led_blink(uint32_t now_us);
 
 	// Calibration mode
 	void enter_calibration();
@@ -53,6 +52,7 @@ private:
 
 	// Shared calibration
 	Calibration calibration_;
+	LedController led_controller_;
 
 	// Mode handlers
 	Attenuverter attenuverter_;
@@ -65,16 +65,10 @@ private:
 	bool button_b_pressed_;
 	bool calibration_active_;
 	bool button_a_release_event_;
-	uint32_t mode_led_override_started_us_;
-	uint32_t mode_led_override_until_us_;
 
 	// Long press detection for entering calibration
 	uint32_t both_pressed_since_;  // timestamp when both buttons pressed, 0 if not
 	static constexpr uint32_t kLongPressUs = 1500000;  // 1.5 seconds
-	static constexpr uint32_t kModeLedBlinkHalfPeriodUs = 100000;  // 100ms
-	static constexpr uint32_t kModeLedBlinkCount = 3;
-	static constexpr uint32_t kModeLedHoldUs =
-		kModeLedBlinkHalfPeriodUs * 2 * kModeLedBlinkCount;
 	bool long_press_triggered_;
 };
 

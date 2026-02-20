@@ -38,10 +38,6 @@ public:
 	// Blink all LEDs for calibration mode visual feedback
 	void update_leds(brain::ui::Leds& leds);
 
-	// Shared helper for mode LED override timing checks.
-	static bool is_mode_led_override_active(uint32_t now_us,
-											uint32_t override_until_us);
-
 	// Constants for modes that apply calibration
 	static constexpr int32_t kCalibScale = 10000;
 

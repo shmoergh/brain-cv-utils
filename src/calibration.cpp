@@ -121,11 +121,6 @@ void Calibration::update_leds(brain::ui::Leds& leds) {
 	}
 }
 
-bool Calibration::is_mode_led_override_active(uint32_t now_us,
-											  uint32_t override_until_us) {
-	return static_cast<int32_t>(now_us - override_until_us) < 0;
-}
-
 void Calibration::load_from_flash() {
 	const auto* data =
 		reinterpret_cast<const CalibrationStorage*>(XIP_BASE + kFlashOffset);

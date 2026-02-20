@@ -13,8 +13,6 @@ CvUtils::CvUtils()
 	  button_b_pressed_(false),
 	  calibration_active_(false),
 	  button_a_release_event_(false),
-	  mode_led_override_started_us_(0),
-	  mode_led_override_until_us_(0),
 	  both_pressed_since_(0),
 	  long_press_triggered_(false) {}
 
@@ -115,18 +113,15 @@ void CvUtils::update() {
 		next_mode();
 	}
 	button_a_release_event_ = false;
-	const bool mode_led_override_active =
-		Calibration::is_mode_led_override_active(now, mode_led_override_until_us_);
 
 	// --- Dispatch to current mode ---
 	switch (current_mode_) {
 		case Mode::kAttenuverter:
-			attenuverter_.update(pots_, cv_in_, cv_out_, leds_,
-								!mode_led_override_active);
+			attenuverter_.update(pots_, cv_in_, cv_out_, leds_, led_controller_);
 			break;
 		case Mode::kPrecisionAdder:
-			precision_adder_.update(pots_, cv_in_, cv_out_, leds_, calibration_,
-									button_b_pressed_, !mode_led_override_active);
+			precision_adder_.update(pots_, cv_in_, cv_out_, calibration_,
+									button_b_pressed_, leds_, led_controller_);
 			break;
 		case Mode::kSlew:
 			// TODO: Phase 4 (slew limiter)
@@ -135,14 +130,12 @@ void CvUtils::update() {
 			// TODO: Phase 5
 			break;
 		case Mode::kCvMixer:
-			cv_mixer_.update(pots_, cv_in_, cv_out_, leds_,
-							 !mode_led_override_active);
+			cv_mixer_.update(pots_, cv_in_, cv_out_, leds_, led_controller_);
 			break;
 	}
-
-	// Mode indicator takes precedence briefly after switching modes.
-	if (mode_led_override_active) {
-		update_mode_led_blink(now);
+	if (led_controller_.is_mode_override_active(now)) {
+		led_controller_.render_mode_change(
+			leds_, static_cast<uint8_t>(current_mode_), kNumModes, now);
 	}
 }
 
@@ -151,8 +144,7 @@ void CvUtils::update() {
 void CvUtils::next_mode() {
 	uint8_t next = (static_cast<uint8_t>(current_mode_) + 1) % kNumModes;
 	set_mode(static_cast<Mode>(next));
-	mode_led_override_started_us_ = time_us_32();
-	mode_led_override_until_us_ = mode_led_override_started_us_ + kModeLedHoldUs;
+	led_controller_.start_mode_change(time_us_32());
 	printf("Mode: %d\n", static_cast<int>(current_mode_));
 }
 
@@ -161,36 +153,10 @@ void CvUtils::set_mode(Mode mode) {
 	leds_.off_all();
 }
 
-void CvUtils::update_mode_leds() {
-	// Show current mode LED briefly (modes will take over LEDs on next update)
-	for (uint8_t i = 0; i < kNumModes; i++) {
-		if (i == static_cast<uint8_t>(current_mode_)) {
-			leds_.on(i);
-		} else {
-			leds_.off(i);
-		}
-	}
-}
-
-void CvUtils::update_mode_led_blink(uint32_t now_us) {
-	const uint32_t elapsed = now_us - mode_led_override_started_us_;
-	const uint32_t phase = elapsed / kModeLedBlinkHalfPeriodUs;
-	const bool led_on = (phase % 2u) == 0u;
-
-	if (!led_on) {
-		leds_.off_all();
-		return;
-	}
-
-	update_mode_leds();
-}
-
 // ---------- Calibration mode ----------
 
 void CvUtils::enter_calibration() {
 	calibration_active_ = true;
-	mode_led_override_started_us_ = 0;
-	mode_led_override_until_us_ = 0;
 	button_a_release_event_ = false;
 	cv_out_.set_coupling(brain::io::AudioCvOutChannel::kChannelA, brain::io::AudioCvOutCoupling::kDcCoupled);
 	cv_out_.set_coupling(brain::io::AudioCvOutChannel::kChannelB, brain::io::AudioCvOutCoupling::kDcCoupled);
@@ -200,7 +166,6 @@ void CvUtils::enter_calibration() {
 
 void CvUtils::exit_calibration() {
 	calibration_active_ = false;
-	mode_led_override_started_us_ = 0;
 	button_a_release_event_ = false;
 	cv_out_.set_coupling(brain::io::AudioCvOutChannel::kChannelA, brain::io::AudioCvOutCoupling::kAcCoupled);
 	cv_out_.set_coupling(brain::io::AudioCvOutChannel::kChannelB, brain::io::AudioCvOutCoupling::kAcCoupled);
