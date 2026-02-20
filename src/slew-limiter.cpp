@@ -1,22 +1,35 @@
 #include "slew-limiter.h"
+#include "fixed-point.h"
 
 #include <pico/time.h>
 
 namespace {
-float clampf(float v, float lo, float hi) {
-	return v < lo ? lo : (v > hi ? hi : v);
+// Internal fixed-point format:
+// - Voltages are represented as signed millivolts (mV).
+// - Fractions are represented as Q15 (0..32768 == 0.0..1.0).
+constexpr int32_t kMillivoltsPerVolt = 1000;
+constexpr uint32_t kPotMax = 255;
+constexpr uint32_t kPotCubeMax = kPotMax * kPotMax * kPotMax;
+constexpr uint32_t kMinSlewDenominatorUs = 2000;  // Mirrors old 0.001f threshold.
+
+uint16_t pot_to_slew_rate_q15(uint8_t pot_value) {
+	if (pot_value == 0) return 0;
+	const uint32_t p = pot_value;
+	const uint32_t p3 = p * p * p;
+	// Cubic taper keeps more knob travel in slower slew region.
+	const uint64_t scaled =
+		(static_cast<uint64_t>(p3) * fixed_point::kQ15One + (kPotCubeMax / 2)) / kPotCubeMax;
+	return static_cast<uint16_t>(scaled > fixed_point::kQ15One ? fixed_point::kQ15One : scaled);
 }
 
-float pot_to_slew_rate(uint8_t pot_value) {
-	if (pot_value == 0) return 0.0f;
-	float x = static_cast<float>(pot_value) / 255.0f;
-	return x * x * x;
+uint16_t pot_to_shape_q15(uint8_t pot_value) {
+	return fixed_point::u8_to_q15(pot_value);
 }
 }
 
 SlewLimiter::SlewLimiter()
-	: current_ch1_(0.0f),
-	  current_ch2_(0.0f),
+	: current_ch1_mv_(0),
+	  current_ch2_mv_(0),
 	  last_time_us_(0),
 	  linked_(false),
 	  button_b_prev_(false) {}
@@ -40,50 +53,65 @@ void SlewLimiter::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
 	if (dt_us > 100000) dt_us = 100000;
 
 	// Pots
-	float rise_rate = pot_to_slew_rate(pots.get(kPotRise));
-	float fall_rate = linked_ ? rise_rate : pot_to_slew_rate(pots.get(kPotFall));
-	float shape = static_cast<float>(pots.get(kPotShape)) / 255.0f;
+	const uint16_t rise_rate_q15 = pot_to_slew_rate_q15(pots.get(kPotRise));
+	const uint16_t fall_rate_q15 = linked_ ? rise_rate_q15 : pot_to_slew_rate_q15(pots.get(kPotFall));
+	const uint16_t shape_q15 = pot_to_shape_q15(pots.get(kPotShape));
+	const auto compute_coeff_q15 = [dt_us](uint16_t rate_q15, uint32_t max_slew_us) -> uint16_t {
+		if (rate_q15 == 0) return fixed_point::kQ15One;
+		// coeff ~= dt / (rate * max_slew_time), clamped to [0, 1] in Q15.
+		const uint64_t denominator =
+			(static_cast<uint64_t>(rate_q15) * max_slew_us) / fixed_point::kQ15One;
+		if (denominator <= kMinSlewDenominatorUs) return fixed_point::kQ15One;
+		const uint64_t numerator = static_cast<uint64_t>(dt_us) * fixed_point::kQ15One;
+		const uint64_t scaled = (numerator + (denominator / 2)) / denominator;
+		return static_cast<uint16_t>(scaled >= fixed_point::kQ15One ? fixed_point::kQ15One : scaled);
+	};
 
 	// Slew coefficients
-	float rise_coeff = rise_rate > 0.001f
-		? clampf(static_cast<float>(dt_us) / (rise_rate * static_cast<float>(kMaxSlewUs)), 0.0f, 1.0f)
-		: 1.0f;
-	float fall_coeff = fall_rate > 0.001f
-		? clampf(static_cast<float>(dt_us) / (fall_rate * static_cast<float>(kMaxSlewUs)), 0.0f, 1.0f)
-		: 1.0f;
+	const uint16_t rise_coeff_q15 = compute_coeff_q15(rise_rate_q15, kMaxSlewUs);
+	const uint16_t fall_coeff_q15 = compute_coeff_q15(fall_rate_q15, kMaxSlewUs);
 
 	// Read inputs and apply slew
-	float in_ch1 = cv_in.get_voltage_channel_a();
-	float in_ch2 = cv_in.get_voltage_channel_b();
-	current_ch1_ = slew_channel(in_ch1, current_ch1_, rise_coeff, fall_coeff, shape);
-	current_ch2_ = slew_channel(in_ch2, current_ch2_, rise_coeff, fall_coeff, shape);
+	const int32_t in_ch1_mv =
+		static_cast<int32_t>(cv_in.get_voltage_channel_a() * static_cast<float>(kMillivoltsPerVolt));
+	const int32_t in_ch2_mv =
+		static_cast<int32_t>(cv_in.get_voltage_channel_b() * static_cast<float>(kMillivoltsPerVolt));
+	current_ch1_mv_ =
+		slew_channel_mv(in_ch1_mv, current_ch1_mv_, rise_coeff_q15, fall_coeff_q15, shape_q15);
+	current_ch2_mv_ =
+		slew_channel_mv(in_ch2_mv, current_ch2_mv_, rise_coeff_q15, fall_coeff_q15, shape_q15);
 
 	// Output
-	const float out_a_voltage = clampf(current_ch1_, 0.0f, kMaxVoltage);
-	const float out_b_voltage = clampf(current_ch2_, 0.0f, kMaxVoltage);
+	const int32_t out_a_mv = fixed_point::clamp_i32(current_ch1_mv_, 0, kMaxMillivolts);
+	const int32_t out_b_mv = fixed_point::clamp_i32(current_ch2_mv_, 0, kMaxMillivolts);
+	const float out_a_voltage = static_cast<float>(out_a_mv) / static_cast<float>(kMillivoltsPerVolt);
+	const float out_b_voltage = static_cast<float>(out_b_mv) / static_cast<float>(kMillivoltsPerVolt);
 	cv_out.set_voltage(brain::io::AudioCvOutChannel::kChannelA, out_a_voltage);
 	cv_out.set_voltage(brain::io::AudioCvOutChannel::kChannelB, out_b_voltage);
 	led_controller.render_output_vu(leds, out_a_voltage, out_b_voltage);
 }
 
-float SlewLimiter::slew_channel(float input, float current, float rise_coeff,
-								float fall_coeff, float shape) {
-	float diff = input - current;
-	if (diff == 0.0f) return current;
+int32_t SlewLimiter::slew_channel_mv(int32_t input_mv, int32_t current_mv,
+									 uint16_t rise_coeff_q15,
+									 uint16_t fall_coeff_q15,
+									 uint16_t shape_q15) {
+	const int32_t diff_mv = input_mv - current_mv;
+	if (diff_mv == 0) return current_mv;
 
-	float coeff = diff > 0.0f ? rise_coeff : fall_coeff;
+	const uint16_t coeff_q15 = diff_mv > 0 ? rise_coeff_q15 : fall_coeff_q15;
 
-	// Exponential: fraction of remaining distance
-	float exp_step = coeff * diff;
+	// Exponential: fraction of remaining distance.
+	const int32_t exp_step_mv = fixed_point::mul_q15(diff_mv, coeff_q15);
 
-	// Linear: constant rate
-	float sign = diff > 0.0f ? 1.0f : -1.0f;
-	float linear_move = coeff * 10.0f * sign;
-	if ((diff > 0.0f && linear_move > diff) || (diff < 0.0f && linear_move < diff)) {
-		linear_move = diff;
+	// Linear: constant rate in millivolts.
+	// kMaxMillivolts scales the "constant-rate" branch to full-range per coeff=1.
+	int32_t linear_move_mv = fixed_point::mul_q15(kMaxMillivolts, coeff_q15);
+	if (diff_mv < 0) linear_move_mv = -linear_move_mv;
+	if ((diff_mv > 0 && linear_move_mv > diff_mv) || (diff_mv < 0 && linear_move_mv < diff_mv)) {
+		linear_move_mv = diff_mv;
 	}
 
-	// Blend: shape=0 → linear, shape=1 → exponential
-	float step = linear_move * (1.0f - shape) + exp_step * shape;
-	return current + step;
+	// Blend: shape=0 -> linear, shape=1 -> exponential.
+	const int32_t step_mv = fixed_point::blend_q15(linear_move_mv, exp_step_mv, shape_q15);
+	return current_mv + step_mv;
 }

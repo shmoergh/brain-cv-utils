@@ -23,15 +23,17 @@ private:
 	static constexpr uint8_t kPotRise = 0;
 	static constexpr uint8_t kPotFall = 1;
 	static constexpr uint8_t kPotShape = 2;
-	static constexpr float kMaxVoltage = 10.0f;
+	static constexpr int32_t kMaxMillivolts = 10000;
 	static constexpr uint32_t kMaxSlewUs = 2000000;  // ~2 seconds
 
-	static float slew_channel(float input, float current, float rise_coeff,
-							  float fall_coeff, float shape);
+	static int32_t slew_channel_mv(int32_t input_mv, int32_t current_mv,
+								   uint16_t rise_coeff_q15,
+								   uint16_t fall_coeff_q15,
+								   uint16_t shape_q15);
 
 	// State
-	float current_ch1_;
-	float current_ch2_;
+	int32_t current_ch1_mv_;
+	int32_t current_ch2_mv_;
 	uint32_t last_time_us_;
 	bool linked_;
 	bool button_b_prev_;
