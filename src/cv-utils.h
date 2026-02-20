@@ -3,6 +3,7 @@
 
 #include <cstdint>
 
+#include "ad-envelope.h"
 #include "attenuverter.h"
 #include "calibration.h"
 #include "cv-mixer.h"
@@ -59,6 +60,7 @@ private:
 	Attenuverter attenuverter_;
 	PrecisionAdder precision_adder_;
 	SlewLimiter slew_limiter_;
+	AdEnvelope ad_envelope_;
 	CvMixer cv_mixer_;
 
 	// State

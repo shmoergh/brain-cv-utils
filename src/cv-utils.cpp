@@ -57,6 +57,9 @@ void CvUtils::init() {
 	// Load calibration from flash
 	calibration_.init();
 
+	// Initialize mode handlers that need setup
+	ad_envelope_.init(pulse_);
+
 	// Set initial mode
 	set_mode(Mode::kAttenuverter);
 
@@ -128,7 +131,8 @@ void CvUtils::update() {
 								 button_b_pressed_, leds_, led_controller_);
 			break;
 		case Mode::kAdEnvelope:
-			// TODO: Phase 5
+			ad_envelope_.update(pots_, cv_in_, cv_out_, pulse_, calibration_,
+								 button_b_pressed_, leds_, led_controller_);
 			break;
 		case Mode::kCvMixer:
 			cv_mixer_.update(pots_, cv_in_, cv_out_, leds_, led_controller_);

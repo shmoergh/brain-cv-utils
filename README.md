@@ -45,7 +45,20 @@ Smooth out CV transitions with independent rise and fall times.
 | CV Out A/B | Slewed signals |
 | LEDs 1–3 | CH1 output VU |
 | LEDs 4–6 | CH2 output VU |
-### 4. AD Envelope *(coming soon)*
+### 4. AD Envelope
+Simple attack-decay envelope generator with end-of-cycle trigger.
+
+| Control | Function |
+|---------|----------|
+| Pot 1 | Attack time (1ms–~5s, logarithmic) |
+| Pot 2 | Decay time (1ms–~5s, logarithmic) |
+| Pot 3 | Shape — linear (left) to exponential (right) |
+| Button B | Manual trigger |
+| Pulse In | Trigger input (rising edge) |
+| Pulse Out | End-of-cycle trigger (fires when decay completes) |
+| CV In A | Attack time CV modulation (±50%) |
+| CV Out A/B | Envelope output (same on both) |
+| LEDs 1–6 | Envelope level VU |
 
 ### 5. CV Mixer
 Two-input mixer with per-channel level and master output control.
