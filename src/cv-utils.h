@@ -8,6 +8,7 @@
 #include "calibration.h"
 #include "cv-mixer.h"
 #include "led-controller.h"
+#include "noise.h"
 #include "precision-adder.h"
 #include "slew-limiter.h"
 #include "brain-io/audio-cv-in.h"
@@ -17,14 +18,15 @@
 #include "brain-ui/leds.h"
 #include "brain-ui/pots.h"
 
-constexpr uint8_t kNumModes = 5;
+constexpr uint8_t kNumModes = 6;
 
 enum class Mode : uint8_t {
 	kAttenuverter = 0,
 	kPrecisionAdder = 1,
 	kSlew = 2,
 	kAdEnvelope = 3,
-	kCvMixer = 4
+	kCvMixer = 4,
+	kNoise = 5
 };
 
 class CvUtils {
@@ -62,6 +64,7 @@ private:
 	SlewLimiter slew_limiter_;
 	AdEnvelope ad_envelope_;
 	CvMixer cv_mixer_;
+	Noise noise_;
 
 	// State
 	Mode current_mode_;

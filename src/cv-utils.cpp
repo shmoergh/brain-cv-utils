@@ -137,6 +137,9 @@ void CvUtils::update() {
 		case Mode::kCvMixer:
 			cv_mixer_.update(pots_, cv_in_, cv_out_, leds_, led_controller_);
 			break;
+		case Mode::kNoise:
+			noise_.update(pots_, cv_out_, button_b_pressed_, leds_, led_controller_);
+			break;
 	}
 	if (led_controller_.is_mode_override_active(now)) {
 		led_controller_.render_mode_change(
