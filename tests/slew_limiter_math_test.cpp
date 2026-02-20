@@ -6,6 +6,7 @@
 
 namespace {
 constexpr int32_t kMaxMillivolts = 10000;
+constexpr int32_t kCenterMillivolts = 5000;
 constexpr uint32_t kPotMax = 255;
 constexpr uint32_t kPotCubeMax = kPotMax * kPotMax * kPotMax;
 constexpr uint32_t kMinSlewDenominatorUs = 2000;
@@ -47,6 +48,9 @@ int32_t slew_channel_mv(int32_t input_mv, int32_t current_mv, uint16_t rise_coef
 	}
 
 	const int32_t step_mv = fixed_point::blend_q15(linear_move_mv, exp_step_mv, shape_q15);
+	if (step_mv == 0) {
+		return current_mv + (diff_mv > 0 ? 1 : -1);
+	}
 	return current_mv + step_mv;
 }
 }  // namespace
@@ -75,6 +79,16 @@ int main() {
 	const int32_t s_linear = slew_channel_mv(9000, 0, 8192, 8192, 0);
 	const int32_t s_exp = slew_channel_mv(9000, 0, 8192, 8192, fixed_point::kQ15One);
 	assert(s_linear != s_exp);
+
+	// Full exponential with tiny coeff should still eventually reach target (no deadband lock).
+	int32_t current = 0;
+	for (int i = 0; i < 2000; ++i) {
+		current = slew_channel_mv(100, current, 50, 50, fixed_point::kQ15One);
+	}
+	assert(current == 100);
+
+	// Bipolar signal zero should map to 5V center in DAC domain.
+	assert(fixed_point::clamp_i32(0 + kCenterMillivolts, 0, kMaxMillivolts) == 5000);
 
 	std::puts("slew_limiter_math_test: PASS");
 	return 0;

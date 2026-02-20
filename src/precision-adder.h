@@ -9,6 +9,7 @@
 #include "brain-ui/leds.h"
 #include "brain-ui/pots.h"
 #include "led-controller.h"
+#include "voltage-smoother.h"
 
 class PrecisionAdder {
 public:
@@ -35,6 +36,12 @@ private:
 	static constexpr uint16_t kAdcAtPlus5V = 3723;
 	static constexpr uint16_t kAdcSpan = kAdcAtPlus5V - kAdcAtMinus5V;
 
+	// Anti-jitter smoothing (small deadband, no extra lag by default).
+	static constexpr int32_t kSmoothingDeadbandMv = 3;
+	static constexpr uint16_t kSmoothingAlphaQ15 = 4096;	// 0.125
+
+	VoltageSmoother smoother_ch1_{kSmoothingDeadbandMv, kSmoothingAlphaQ15};
+	VoltageSmoother smoother_ch2_{kSmoothingDeadbandMv, kSmoothingAlphaQ15};
 };
 
 #endif  // PRECISION_ADDER_H_

@@ -11,6 +11,7 @@ void PrecisionAdder::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
 							Calibration& calibration, bool button_b_pressed,
 							brain::ui::Leds& leds, LedController& led_controller) {
 	(void)button_b_pressed;
+	constexpr int32_t kMaxMillivolts = 10000;
 	// Pot 1/2: octave offset — map 0-255 to -4..+4 (9 steps)
 	int8_t octave_ch1 = static_cast<int8_t>(pots.get(kPotOctaveCh1) * 9 / 256) - 4;
 	int8_t octave_ch2 = static_cast<int8_t>(pots.get(kPotOctaveCh2) * 9 / 256) - 4;
@@ -46,8 +47,13 @@ void PrecisionAdder::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
 	dac_ch1 = clamp32(dac_ch1 + offset_ch1, 0, kDacMax);
 	dac_ch2 = clamp32(dac_ch2 + offset_ch2, 0, kDacMax);
 
-	const float out_a_voltage = static_cast<float>(dac_ch1) * 10.0f / kDacMax;
-	const float out_b_voltage = static_cast<float>(dac_ch2) * 10.0f / kDacMax;
+	const int32_t target_a_mv = (dac_ch1 * kMaxMillivolts + (kDacMax / 2)) / kDacMax;
+	const int32_t target_b_mv = (dac_ch2 * kMaxMillivolts + (kDacMax / 2)) / kDacMax;
+	const int32_t smooth_a_mv = smoother_ch1_.process(target_a_mv);
+	const int32_t smooth_b_mv = smoother_ch2_.process(target_b_mv);
+
+	const float out_a_voltage = static_cast<float>(smooth_a_mv) / 1000.0f;
+	const float out_b_voltage = static_cast<float>(smooth_b_mv) / 1000.0f;
 	cv_out.set_voltage(brain::io::AudioCvOutChannel::kChannelA, out_a_voltage);
 	cv_out.set_voltage(brain::io::AudioCvOutChannel::kChannelB, out_b_voltage);
 	led_controller.render_output_vu(leds, out_a_voltage, out_b_voltage);
