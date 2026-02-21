@@ -4,7 +4,8 @@ A multi-mode CV utility firmware for the [Brain](https://github.com/shmoergh/mod
 
 ## Quick guide
 
-<img width="2840" height="4458" alt="image" src="https://github.com/user-attachments/assets/e99fba64-3192-4888-85c4-fe9cc03b388c" />
+<img width="2840" height="4362" alt="image" src="https://github.com/user-attachments/assets/ccaaff7d-e211-4447-b3a2-cff29095acfd" />
+
 
 
 ## Modes
