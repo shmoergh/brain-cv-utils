@@ -121,8 +121,9 @@ Calibration values persist across power cycles and are currently applied by **Pr
 - [Pico (RP2040) firmware](./brain-cv-utils-pico.uf2)
 - [Pico 2 (RP2350) firmware](./brain-cv-utils-pico-2.uf2)
 
+## Development
 
-## Build
+### Build
 
 ```bash
 git submodule update --init --recursive
@@ -133,7 +134,7 @@ cmake --build .
 
 Targets Pico 2 (RP2350) by default. To build for Pico 1 (RP2040), swap the `PICO_BOARD`/`PICO_PLATFORM` lines in `CMakeLists.txt`.
 
-## Tests
+### Tests
 
 Host-side math tests live in `tests/` and can be run without the Pico toolchain:
 
@@ -145,15 +146,15 @@ c++ -std=c++17 tests/slew_limiter_math_test.cpp -o /tmp/brain-cv-utils-tests/sle
 /tmp/brain-cv-utils-tests/slew_limiter_math_test
 ```
 
-## Flash
+### Flash
 
 Hold BOOTSEL while connecting the Brain module via USB, then copy `build/brain-cv-utils.uf2` to the mounted drive.
 
-## Debug
+### Debug
 
 Uses OpenOCD + CMSIS-DAP. VSCode launch configs included for both RP2040 and RP2350.
 
-## SDK
+### SDK
 
 Brain SDK is included as a git submodule. After cloning:
 
