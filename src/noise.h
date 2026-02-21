@@ -5,6 +5,7 @@
 
 #include "led-controller.h"
 #include "brain-io/audio-cv-out.h"
+#include "brain-io/pulse.h"
 #include "brain-ui/leds.h"
 #include "brain-ui/pots.h"
 
@@ -13,7 +14,7 @@ public:
 	Noise();
 
 	void update(brain::ui::Pots& pots, brain::io::AudioCvOut& cv_out,
-				bool button_b_pressed, brain::ui::Leds& leds,
+				brain::io::Pulse& pulse, bool button_b_pressed, brain::ui::Leds& leds,
 				LedController& led_controller);
 
 private:
@@ -68,6 +69,7 @@ private:
 	// Timing range
 	static constexpr uint32_t kMinIntervalUs = 1000;
 	static constexpr uint32_t kMaxIntervalUs = 2000000;
+	static constexpr uint32_t kPulseWidthUs = 10000;
 
 	// State per channel
 	struct ChannelState {
@@ -78,6 +80,9 @@ private:
 	ChannelState ch_a_;
 	ChannelState ch_b_;
 	uint32_t rng_state_;
+	uint32_t pulse_off_at_us_;
+	bool pulse_active_;
+	bool pulse_in_prev_high_;
 	Scale active_scale_;
 };
 
