@@ -6,12 +6,12 @@ cmake_minimum_required(VERSION 3.22)
 # ============================================================================
 
 # Raspberry Pi Pico (RP2040 - ARM Cortex-M0+) - ACTIVE
-# set(PICO_BOARD pico)
-# set(PICO_PLATFORM rp2040)
+set(PICO_BOARD pico)
+set(PICO_PLATFORM rp2040)
 
 # Raspberry Pi Pico 2 (RP2350 - ARM Cortex-M33)
-set(PICO_BOARD pico2)
-set(PICO_PLATFORM rp2350-arm-s)
+# set(PICO_BOARD pico2)
+# set(PICO_PLATFORM rp2350-arm-s)
 
 # Alternative: Raspberry Pi Pico 2 with RISC-V cores
 # set(PICO_BOARD pico2)

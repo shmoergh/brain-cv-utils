@@ -9,6 +9,7 @@ namespace {
 // - Voltages are represented as signed millivolts (mV).
 // - Fractions are represented as Q15 (0..32768 == 0.0..1.0).
 constexpr int32_t kMillivoltsPerVolt = 1000;
+constexpr int32_t kDacMax = 4095;
 constexpr uint32_t kPotMax = 255;
 constexpr uint32_t kPotCubeMax = kPotMax * kPotMax * kPotMax;
 constexpr uint32_t kMinSlewDenominatorUs = 2000;  // Mirrors old 0.001f threshold.
@@ -43,8 +44,6 @@ void SlewLimiter::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
 						  brain::io::AudioCvOut& cv_out,
 						  Calibration& calibration, bool button_b_pressed,
 						  brain::ui::Leds& leds, LedController& led_controller) {
-	(void)calibration;
-
 	// Button B release: toggle linked mode
 	if (button_b_prev_ && !button_b_pressed) {
 		linked_ = !linked_;
@@ -99,10 +98,25 @@ void SlewLimiter::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
 		fixed_point::clamp_i32(current_ch1_mv_ + kCenterMillivolts, 0, kMaxMillivolts);
 	const int32_t target_b_mv =
 		fixed_point::clamp_i32(current_ch2_mv_ + kCenterMillivolts, 0, kMaxMillivolts);
-	const int32_t out_a_mv = output_smoother_ch1_.process(target_a_mv);
-	const int32_t out_b_mv = output_smoother_ch2_.process(target_b_mv);
-	const float target_a_voltage = static_cast<float>(target_a_mv) / static_cast<float>(kMillivoltsPerVolt);
-	const float target_b_voltage = static_cast<float>(target_b_mv) / static_cast<float>(kMillivoltsPerVolt);
+
+	// Apply output calibration in DAC domain to match other CV passthrough-like modes.
+	int32_t dac_a = (target_a_mv * kDacMax + (kMaxMillivolts / 2)) / kMaxMillivolts;
+	int32_t dac_b = (target_b_mv * kDacMax + (kMaxMillivolts / 2)) / kMaxMillivolts;
+	dac_a = dac_a * (Calibration::kCalibScale + calibration.gain_trim_a()) / Calibration::kCalibScale;
+	dac_b = dac_b * (Calibration::kCalibScale + calibration.gain_trim_b()) / Calibration::kCalibScale;
+	dac_a += calibration.offset_trim_a();
+	dac_b += calibration.offset_trim_b();
+	dac_a = fixed_point::clamp_i32(dac_a, 0, kDacMax);
+	dac_b = fixed_point::clamp_i32(dac_b, 0, kDacMax);
+
+	const int32_t calibrated_target_a_mv = (dac_a * kMaxMillivolts + (kDacMax / 2)) / kDacMax;
+	const int32_t calibrated_target_b_mv = (dac_b * kMaxMillivolts + (kDacMax / 2)) / kDacMax;
+	const int32_t out_a_mv = output_smoother_ch1_.process(calibrated_target_a_mv);
+	const int32_t out_b_mv = output_smoother_ch2_.process(calibrated_target_b_mv);
+	const float target_a_voltage =
+		static_cast<float>(calibrated_target_a_mv) / static_cast<float>(kMillivoltsPerVolt);
+	const float target_b_voltage =
+		static_cast<float>(calibrated_target_b_mv) / static_cast<float>(kMillivoltsPerVolt);
 	const float out_a_voltage = static_cast<float>(out_a_mv) / static_cast<float>(kMillivoltsPerVolt);
 	const float out_b_voltage = static_cast<float>(out_b_mv) / static_cast<float>(kMillivoltsPerVolt);
 	cv_out.set_voltage(brain::io::AudioCvOutChannel::kChannelA, out_a_voltage);
