@@ -2,6 +2,10 @@
 
 A multi-mode CV utility firmware for the [Brain](https://github.com/shmoergh/moduleur/tree/main/modules/07-brain) module in the [Shmøergh Moduleur](https://www.shmoergh.com/moduleur/).
 
+## Quick guide
+
+<img width="2840" height="4288" alt="image" src="https://github.com/user-attachments/assets/f2bdb859-baaa-4425-82ab-f12715d87d95" />
+
 ## Modes
 
 The firmware has 6 modes:
