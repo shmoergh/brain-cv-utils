@@ -1,23 +1,16 @@
 file(GLOB FILES src/*.cpp src/*.h)
 cmake_minimum_required(VERSION 3.22)
 
-# ============================================================================
-# BOARD CONFIGURATION - Comment/uncomment to switch between boards
-# ============================================================================
+# Default board/platform. Can be overridden at configure time with:
+#   -DPICO_BOARD=<board>
+#   -DPICO_PLATFORM=<platform>
+if(NOT DEFINED PICO_BOARD)
+	set(PICO_BOARD pico2)
+endif()
 
-# Raspberry Pi Pico (RP2040 - ARM Cortex-M0+) - ACTIVE
-set(PICO_BOARD pico)
-set(PICO_PLATFORM rp2040)
-
-# Raspberry Pi Pico 2 (RP2350 - ARM Cortex-M33)
-# set(PICO_BOARD pico2)
-# set(PICO_PLATFORM rp2350-arm-s)
-
-# Alternative: Raspberry Pi Pico 2 with RISC-V cores
-# set(PICO_BOARD pico2)
-# set(PICO_PLATFORM rp2350-riscv)
-
-# ============================================================================
+if(NOT DEFINED PICO_PLATFORM)
+	set(PICO_PLATFORM rp2350-arm-s)
+endif()
 
 # Include Pico SDK (from brain-sdk subdirectory)
 include(brain-sdk/pico_sdk_import.cmake)
