@@ -54,7 +54,7 @@ void PrecisionAdder::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
 
 	const float out_a_voltage = static_cast<float>(smooth_a_mv) / 1000.0f;
 	const float out_b_voltage = static_cast<float>(smooth_b_mv) / 1000.0f;
-	cv_out.set_voltage(brain::io::AudioCvOutChannel::kChannelA, out_a_voltage);
-	cv_out.set_voltage(brain::io::AudioCvOutChannel::kChannelB, out_b_voltage);
+	cv_out.set_voltage_calibrated(brain::io::AudioCvOutChannel::kChannelA, out_a_voltage);
+	cv_out.set_voltage_calibrated(brain::io::AudioCvOutChannel::kChannelB, out_b_voltage);
 	led_controller.render_output_vu(leds, out_a_voltage, out_b_voltage);
 }

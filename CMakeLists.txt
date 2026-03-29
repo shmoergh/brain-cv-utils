@@ -17,6 +17,10 @@ include(brain-sdk/pico_sdk_import.cmake)
 
 project(brain-cv-utils C CXX ASM)
 
+# Reserve top-of-flash sectors for Brain SDK storage before Pico SDK init.
+include(brain-sdk/cmake/brain-storage-reserve-flash.cmake)
+brain_storage_configure_flash_reservation()
+
 # Initialize the Pico SDK
 pico_sdk_init()
 
@@ -30,6 +34,7 @@ target_link_libraries(brain-cv-utils
 	brain-common
 	brain-ui
 	brain-io
+	brain-storage
 	brain-utils)
 
 pico_enable_stdio_usb(brain-cv-utils 1)

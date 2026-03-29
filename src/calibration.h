@@ -27,7 +27,7 @@ public:
 	void update_from_pots(brain::ui::Pots& pots,
 						  bool button_a_held, bool button_b_held);
 
-	// Save to flash
+	// Save app-level trim state to SDK app blob storage
 	void save();
 
 	// Calibration passthrough: input A->output A, input B->output B.
@@ -51,10 +51,9 @@ private:
 	int16_t gain_trim_b_;
 	int16_t offset_trim_a_;
 	int16_t offset_trim_b_;
-	uint32_t blink_timer_;
 
-	void load_from_flash();
-	void save_to_flash();
+	void load_from_app_blob();
+	void save_to_app_blob() const;
 };
 
 #endif  // CALIBRATION_H_

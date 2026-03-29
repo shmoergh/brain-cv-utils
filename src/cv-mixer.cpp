@@ -22,7 +22,7 @@ void CvMixer::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
 
 	const float out_a_voltage = out;
 	const float out_b_voltage = out;
-	cv_out.set_voltage(brain::io::AudioCvOutChannel::kChannelA, out_a_voltage);
-	cv_out.set_voltage(brain::io::AudioCvOutChannel::kChannelB, out_b_voltage);
+	cv_out.set_voltage_calibrated(brain::io::AudioCvOutChannel::kChannelA, out_a_voltage);
+	cv_out.set_voltage_calibrated(brain::io::AudioCvOutChannel::kChannelB, out_b_voltage);
 	led_controller.render_output_vu(leds, out_a_voltage, out_b_voltage);
 }

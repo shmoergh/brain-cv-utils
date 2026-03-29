@@ -48,6 +48,9 @@ void CvUtils::init() {
 	// Initialize CV I/O
 	cv_in_.init();
 	cv_out_.init();
+	const bool sdk_calibration_loaded = cv_out_.load_calibration_from_flash();
+	printf("CV calibration from SDK storage: %s\n",
+		   sdk_calibration_loaded ? "loaded" : "not found/corrupt (raw fallback)");
 	cv_out_.set_coupling(brain::io::AudioCvOutChannel::kChannelA, brain::io::AudioCvOutCoupling::kAcCoupled);
 	cv_out_.set_coupling(brain::io::AudioCvOutChannel::kChannelB, brain::io::AudioCvOutCoupling::kAcCoupled);
 
@@ -179,5 +182,5 @@ void CvUtils::exit_calibration() {
 	cv_out_.set_coupling(brain::io::AudioCvOutChannel::kChannelB, brain::io::AudioCvOutCoupling::kAcCoupled);
 	calibration_.save();
 	leds_.off_all();
-	printf("Calibration saved, exiting\n");
+	printf("App trim calibration saved, exiting\n");
 }

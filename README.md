@@ -118,9 +118,11 @@ In calibration mode:
 - **Hold Button A + Pot 3** — Output A offset
 - **Hold Button B + Pot 3** — Output B offset
 
-**Tap A + B together** — exits calibration mode (saves to flash).
+**Tap A + B together** — exits calibration mode (saves app trim data to SDK app storage).
 
-Calibration values persist across power cycles and are currently applied by **Precision Adder** and **Slew Limiter**.
+App trim values persist across power cycles and are currently applied by **Precision Adder** and **Slew Limiter**.
+Hardware CV calibration is loaded from Brain SDK calibration storage at startup and applied to CV output writes;
+if calibration is missing/corrupt, output safely falls back to raw voltage writes.
 
 ## Firmwares
 

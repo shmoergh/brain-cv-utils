@@ -1,10 +1,10 @@
 #include "calibration.h"
 
-#include <cstring>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
 
-#include "hardware/flash.h"
-#include "hardware/regs/addressmap.h"
-#include "hardware/sync.h"
+#include "brain-storage/storage.h"
 #include "pico/time.h"
 
 namespace {
@@ -13,34 +13,20 @@ int16_t clamp16(int16_t v, int16_t lo, int16_t hi) {
 	return v < lo ? lo : (v > hi ? hi : v);
 }
 
-constexpr uint32_t kMagic = 0x5043414C;  // "PCAL"
-constexpr uint16_t kVersion = 3;          // v3: separate offset A/B
-constexpr uint32_t kFlashOffset = PICO_FLASH_SIZE_BYTES - FLASH_SECTOR_SIZE;
+constexpr uint32_t kMagic = 0x544C4143;	 // "CALT"
+constexpr uint16_t kVersion = 1;
 
 // Blink period in microseconds (500ms on, 500ms off)
 constexpr uint32_t kBlinkPeriodUs = 500000;
 
-struct CalibrationStorage {
+struct CalibrationAppBlobV1 {
 	uint32_t magic;
 	uint16_t version;
 	int16_t gain_trim_a;
 	int16_t gain_trim_b;
 	int16_t offset_trim_a;
 	int16_t offset_trim_b;
-	uint16_t checksum;
 };
-
-uint16_t compute_checksum(const CalibrationStorage& d) {
-	uint32_t sum = 0;
-	sum += (d.magic & 0xFFFFu);
-	sum += ((d.magic >> 16) & 0xFFFFu);
-	sum += d.version;
-	sum += static_cast<uint16_t>(d.gain_trim_a);
-	sum += static_cast<uint16_t>(d.gain_trim_b);
-	sum += static_cast<uint16_t>(d.offset_trim_a);
-	sum += static_cast<uint16_t>(d.offset_trim_b);
-	return static_cast<uint16_t>(sum & 0xFFFFu);
-}
 
 int16_t pot_to_gain_trim(uint8_t pot_value, int16_t min_val, int16_t max_val) {
 	int32_t span = static_cast<int32_t>(max_val - min_val);
@@ -58,20 +44,19 @@ Calibration::Calibration()
 	: gain_trim_a_(0),
 	  gain_trim_b_(0),
 	  offset_trim_a_(0),
-	  offset_trim_b_(0),
-	  blink_timer_(0) {}
+	  offset_trim_b_(0) {}
 
 void Calibration::init() {
-	load_from_flash();
+	load_from_app_blob();
 }
 
 void Calibration::update_from_pots(brain::ui::Pots& pots,
 								   bool button_a_held, bool button_b_held) {
 	if (button_a_held) {
-		// Hold A + Pot 3 → offset A
+		// Hold A + Pot 3 -> offset A
 		offset_trim_a_ = pot_to_offset_trim(pots.get(2), kOffsetTrimMin, kOffsetTrimMax);
 	} else if (button_b_held) {
-		// Hold B + Pot 3 → offset B
+		// Hold B + Pot 3 -> offset B
 		offset_trim_b_ = pot_to_offset_trim(pots.get(2), kOffsetTrimMin, kOffsetTrimMax);
 	} else {
 		// No button held: Pot 1 = scale A, Pot 2 = scale B
@@ -81,7 +66,7 @@ void Calibration::update_from_pots(brain::ui::Pots& pots,
 }
 
 void Calibration::save() {
-	save_to_flash();
+	save_to_app_blob();
 }
 
 void Calibration::process_passthrough(brain::io::AudioCvIn& cv_in,
@@ -92,7 +77,7 @@ void Calibration::process_passthrough(brain::io::AudioCvIn& cv_in,
 	constexpr float kDacMax = 4095.0f;
 	constexpr float kOffsetTrimToVolts = 10.0f / kDacMax;
 
-	// Direct voltage passthrough with trim correction.
+	// Direct voltage passthrough with app-level trim correction.
 	float out_a = in_a * static_cast<float>(kCalibScale + gain_trim_a_) /
 				  static_cast<float>(kCalibScale);
 	float out_b = in_b * static_cast<float>(kCalibScale + gain_trim_b_) /
@@ -103,8 +88,8 @@ void Calibration::process_passthrough(brain::io::AudioCvIn& cv_in,
 	out_a = out_a < 0.0f ? 0.0f : (out_a > 10.0f ? 10.0f : out_a);
 	out_b = out_b < 0.0f ? 0.0f : (out_b > 10.0f ? 10.0f : out_b);
 
-	cv_out.set_voltage(brain::io::AudioCvOutChannel::kChannelA, out_a);
-	cv_out.set_voltage(brain::io::AudioCvOutChannel::kChannelB, out_b);
+	cv_out.set_voltage_calibrated(brain::io::AudioCvOutChannel::kChannelA, out_a);
+	cv_out.set_voltage_calibrated(brain::io::AudioCvOutChannel::kChannelB, out_b);
 }
 
 void Calibration::update_leds(brain::ui::Leds& leds) {
@@ -121,11 +106,16 @@ void Calibration::update_leds(brain::ui::Leds& leds) {
 	}
 }
 
-void Calibration::load_from_flash() {
-	const auto* data =
-		reinterpret_cast<const CalibrationStorage*>(XIP_BASE + kFlashOffset);
+void Calibration::load_from_app_blob() {
+	CalibrationAppBlobV1 blob{};
+	size_t actual_size = 0;
+	const brain::storage::StorageStatus status =
+		brain::storage::read_app_blob(&blob, sizeof(blob), &actual_size);
 
-	if (data->magic != kMagic) {
+	if (status != brain::storage::StorageStatus::kOk ||
+		actual_size != sizeof(blob) ||
+		blob.magic != kMagic ||
+		blob.version != kVersion) {
 		gain_trim_a_ = 0;
 		gain_trim_b_ = 0;
 		offset_trim_a_ = 0;
@@ -133,53 +123,24 @@ void Calibration::load_from_flash() {
 		return;
 	}
 
-	// v1: magic, version, trim_a, trim_b, checksum, reserved
-	if (data->version == 1) {
-		gain_trim_a_ = clamp16(data->gain_trim_a, kGainTrimMin, kGainTrimMax);
-		gain_trim_b_ = clamp16(data->gain_trim_b, kGainTrimMin, kGainTrimMax);
-		offset_trim_a_ = 0;
-		offset_trim_b_ = 0;
-		return;
-	}
-
-	if (data->version != kVersion) {
-		gain_trim_a_ = 0;
-		gain_trim_b_ = 0;
-		offset_trim_a_ = 0;
-		offset_trim_b_ = 0;
-		return;
-	}
-
-	if (data->checksum != compute_checksum(*data)) {
-		gain_trim_a_ = 0;
-		gain_trim_b_ = 0;
-		offset_trim_a_ = 0;
-		offset_trim_b_ = 0;
-		return;
-	}
-
-	gain_trim_a_ = clamp16(data->gain_trim_a, kGainTrimMin, kGainTrimMax);
-	gain_trim_b_ = clamp16(data->gain_trim_b, kGainTrimMin, kGainTrimMax);
-	offset_trim_a_ = clamp16(data->offset_trim_a, kOffsetTrimMin, kOffsetTrimMax);
-	offset_trim_b_ = clamp16(data->offset_trim_b, kOffsetTrimMin, kOffsetTrimMax);
+	gain_trim_a_ = clamp16(blob.gain_trim_a, kGainTrimMin, kGainTrimMax);
+	gain_trim_b_ = clamp16(blob.gain_trim_b, kGainTrimMin, kGainTrimMax);
+	offset_trim_a_ = clamp16(blob.offset_trim_a, kOffsetTrimMin, kOffsetTrimMax);
+	offset_trim_b_ = clamp16(blob.offset_trim_b, kOffsetTrimMin, kOffsetTrimMax);
 }
 
-void Calibration::save_to_flash() {
-	CalibrationStorage data;
-	data.magic = kMagic;
-	data.version = kVersion;
-	data.gain_trim_a = gain_trim_a_;
-	data.gain_trim_b = gain_trim_b_;
-	data.offset_trim_a = offset_trim_a_;
-	data.offset_trim_b = offset_trim_b_;
-	data.checksum = compute_checksum(data);
+void Calibration::save_to_app_blob() const {
+	CalibrationAppBlobV1 blob{};
+	blob.magic = kMagic;
+	blob.version = kVersion;
+	blob.gain_trim_a = gain_trim_a_;
+	blob.gain_trim_b = gain_trim_b_;
+	blob.offset_trim_a = offset_trim_a_;
+	blob.offset_trim_b = offset_trim_b_;
 
-	uint8_t page_buffer[FLASH_PAGE_SIZE];
-	memset(page_buffer, 0xFF, sizeof(page_buffer));
-	memcpy(page_buffer, &data, sizeof(data));
-
-	uint32_t interrupts = save_and_disable_interrupts();
-	flash_range_erase(kFlashOffset, FLASH_SECTOR_SIZE);
-	flash_range_program(kFlashOffset, page_buffer, FLASH_PAGE_SIZE);
-	restore_interrupts(interrupts);
+	const brain::storage::StorageStatus status =
+		brain::storage::write_app_blob(&blob, sizeof(blob));
+	if (status != brain::storage::StorageStatus::kOk) {
+		printf("Calibration app blob save failed: %d\n", static_cast<int>(status));
+	}
 }

@@ -184,6 +184,6 @@ void Noise::update(brain::ui::Pots& pots, brain::io::AudioCvOut& cv_out,
 	// Output
 	float voltage_a = static_cast<float>(ch_a_.current_value) * 10.0f / static_cast<float>(kDacMax);
 	float voltage_b = static_cast<float>(ch_b_.current_value) * 10.0f / static_cast<float>(kDacMax);
-	cv_out.set_voltage(brain::io::AudioCvOutChannel::kChannelA, voltage_a);
-	cv_out.set_voltage(brain::io::AudioCvOutChannel::kChannelB, voltage_b);
+	cv_out.set_voltage_calibrated(brain::io::AudioCvOutChannel::kChannelA, voltage_a);
+	cv_out.set_voltage_calibrated(brain::io::AudioCvOutChannel::kChannelB, voltage_b);
 }
