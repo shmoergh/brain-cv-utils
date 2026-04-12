@@ -24,10 +24,8 @@ void AdEnvelope::init(Inputs& pulse_in) {
 }
 
 void AdEnvelope::update(Pots& pots, Inputs& inputs, Outputs& outputs,
-						 Calibration& calibration, bool button_b_pressed,
+						 bool button_b_pressed,
 						 Leds& leds, LedController& led_controller) {
-	(void)calibration;
-
 	uint32_t now_us = time_us_32();
 
 	// Read pots

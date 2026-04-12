@@ -7,7 +7,6 @@
 #include "brain/include/leds.h"
 #include "brain/include/outputs.h"
 #include "brain/include/pots.h"
-#include "calibration.h"
 #include "led-controller.h"
 
 class AdEnvelope {
@@ -16,7 +15,7 @@ public:
 
 	void init(Inputs& pulse_in);
 	void update(Pots& pots, Inputs& inputs, Outputs& outputs,
-				Calibration& calibration, bool button_b_pressed,
+				bool button_b_pressed,
 				Leds& leds, LedController& led_controller);
 
 private:

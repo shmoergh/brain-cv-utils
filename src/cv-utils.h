@@ -5,7 +5,6 @@
 
 #include "ad-envelope.h"
 #include "attenuverter.h"
-#include "calibration.h"
 #include "cv-mixer.h"
 #include "led-controller.h"
 #include "noise.h"
@@ -36,15 +35,9 @@ private:
 	void next_mode();
 	void set_mode(Mode mode);
 
-	// Calibration mode
-	void enter_calibration();
-	void exit_calibration();
-
 	// Hardware
 	Brain brain_;
 
-	// Shared calibration
-	Calibration calibration_;
 	LedController led_controller_;
 
 	// Mode handlers
@@ -59,14 +52,8 @@ private:
 	Mode current_mode_;
 	bool button_a_pressed_;
 	bool button_b_pressed_;
-	bool calibration_active_;
 	bool button_a_release_event_;
 	bool initialized_;
-
-	// Long press detection for entering calibration
-	uint32_t both_pressed_since_;  // timestamp when both buttons pressed, 0 if not
-	static constexpr uint32_t kLongPressUs = 1500000;  // 1.5 seconds
-	bool long_press_triggered_;
 };
 
 #endif  // CV_UTILS_H_

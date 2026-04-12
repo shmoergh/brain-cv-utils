@@ -7,13 +7,12 @@
 #include "brain/include/leds.h"
 #include "brain/include/outputs.h"
 #include "brain/include/pots.h"
-#include "calibration.h"
 #include "led-controller.h"
 #include "voltage-smoother.h"
 
 class PrecisionAdder {
 public:
-	void update(Pots& pots, Inputs& cv_in, Outputs& cv_out, Calibration& calibration,
+	void update(Pots& pots, Inputs& cv_in, Outputs& cv_out,
 				bool button_b_pressed, Leds& leds, LedController& led_controller);
 
 private:
@@ -21,18 +20,12 @@ private:
 	static constexpr uint8_t kPotOctaveCh2 = 1;
 	static constexpr uint8_t kPotFineTune = 2;
 
-	static constexpr uint16_t kDacMax = 4095;
-
-	// 1V/oct: 4095 DAC units / 10V = ~410 DAC units per volt
-	static constexpr int16_t kDacPerVolt = 410;
-
-	// Fine tune: ±5 semitones ≈ ±170 DAC units
-	static constexpr int16_t kFineTuneMax = 34 * 5;
-
-	// ADC raw values at calibration points
-	static constexpr uint16_t kAdcAtMinus5V = 298;
-	static constexpr uint16_t kAdcAtPlus5V = 3723;
-	static constexpr uint16_t kAdcSpan = kAdcAtPlus5V - kAdcAtMinus5V;
+	static constexpr int32_t kMinSignalMillivolts = -5000;
+	static constexpr int32_t kMaxSignalMillivolts = 5000;
+	static constexpr int32_t kCenterMillivolts = 5000;
+	static constexpr int32_t kMillivoltsPerOctave = 1000;
+	// Fine tune: ±5 semitones ~= ±0.417V
+	static constexpr int32_t kFineTuneMaxMillivolts = 417;
 
 	// Anti-jitter smoothing (small deadband, no extra lag by default).
 	static constexpr int32_t kSmoothingDeadbandMv = 7;

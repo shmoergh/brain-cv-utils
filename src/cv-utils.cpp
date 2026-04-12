@@ -8,11 +8,8 @@ CvUtils::CvUtils()
 	: current_mode_(Mode::kAttenuverter),
 	  button_a_pressed_(false),
 	  button_b_pressed_(false),
-	  calibration_active_(false),
 	  button_a_release_event_(false),
-	  initialized_(false),
-	  both_pressed_since_(0),
-	  long_press_triggered_(false) {}
+	  initialized_(false) {}
 
 void CvUtils::init() {
 	auto init_component = [](BrainInitStatus status, const char* name) {
@@ -45,6 +42,9 @@ void CvUtils::init() {
 	pot_config.simple = false;
 	if (!init_component(brain_.init_pots(pot_config), "pots")) return;
 
+	// Inputs DMA keeps ADC round-robin enabled for CV channels, which interferes
+	// with the pot mux reader on ADC0. Keep inputs in direct-read mode here.
+	brain_.set_audio_cv_dma_enabled(false);
 	if (!init_component(brain_.init_inputs(), "inputs")) return;
 	if (!init_component(brain_.init_outputs(), "outputs")) return;
 
@@ -58,7 +58,6 @@ void CvUtils::init() {
 		   sdk_calibration_loaded ? "loaded" : "not found/corrupt (raw fallback)",
 		   brain_.outputs.has_calibration() ? "yes" : "no");
 
-	calibration_.init(brain_.storage);
 	ad_envelope_.init(brain_.inputs);
 
 	set_mode(Mode::kAttenuverter);
@@ -78,42 +77,6 @@ void CvUtils::update() {
 
 	uint32_t now = time_us_32();
 
-	// --- Long press detection for calibration mode ---
-	if (button_a_pressed_ && button_b_pressed_) {
-		if (both_pressed_since_ == 0) {
-			both_pressed_since_ = now;
-			long_press_triggered_ = false;
-		}
-
-		if (!calibration_active_ && !long_press_triggered_) {
-			uint32_t held_us = now - both_pressed_since_;
-			if (held_us >= kLongPressUs) {
-				long_press_triggered_ = true;
-				enter_calibration();
-				return;
-			}
-		}
-	} else {
-		// At least one button released
-		if (both_pressed_since_ != 0 && !long_press_triggered_) {
-			// Short tap of both buttons
-			if (calibration_active_) {
-				exit_calibration();
-			}
-		}
-		both_pressed_since_ = 0;
-		long_press_triggered_ = false;
-	}
-
-	// --- Calibration mode ---
-	if (calibration_active_) {
-		calibration_.update_from_pots(brain_.pots, button_a_pressed_, button_b_pressed_);
-		calibration_.process_passthrough(brain_.inputs, brain_.outputs);
-		calibration_.update_leds(brain_.leds);
-		button_a_release_event_ = false;
-		return;
-	}
-
 	// --- Button A release: cycle modes ---
 	if (button_a_release_event_ && !button_b_pressed_) {
 		next_mode();
@@ -127,15 +90,15 @@ void CvUtils::update() {
 								led_controller_);
 			break;
 		case Mode::kPrecisionAdder:
-			precision_adder_.update(brain_.pots, brain_.inputs, brain_.outputs, calibration_,
+			precision_adder_.update(brain_.pots, brain_.inputs, brain_.outputs,
 								   button_b_pressed_, brain_.leds, led_controller_);
 			break;
 		case Mode::kSlew:
-			slew_limiter_.update(brain_.pots, brain_.inputs, brain_.outputs, calibration_,
+			slew_limiter_.update(brain_.pots, brain_.inputs, brain_.outputs,
 							 button_b_pressed_, brain_.leds, led_controller_);
 			break;
 		case Mode::kAdEnvelope:
-			ad_envelope_.update(brain_.pots, brain_.inputs, brain_.outputs, calibration_,
+			ad_envelope_.update(brain_.pots, brain_.inputs, brain_.outputs,
 						   button_b_pressed_, brain_.leds, led_controller_);
 			break;
 		case Mode::kCvMixer:
@@ -165,25 +128,4 @@ void CvUtils::next_mode() {
 void CvUtils::set_mode(Mode mode) {
 	current_mode_ = mode;
 	brain_.leds.off_all();
-}
-
-// ---------- Calibration mode ----------
-
-void CvUtils::enter_calibration() {
-	calibration_active_ = true;
-	button_a_release_event_ = false;
-	brain_.outputs.set_output_range(kOutputsChannelA, kOutputsRange0To10V);
-	brain_.outputs.set_output_range(kOutputsChannelB, kOutputsRange0To10V);
-	brain_.leds.off_all();
-	printf("Calibration mode entered\n");
-}
-
-void CvUtils::exit_calibration() {
-	calibration_active_ = false;
-	button_a_release_event_ = false;
-	brain_.outputs.set_output_range(kOutputsChannelA, kOutputsRangeMinus5To5V);
-	brain_.outputs.set_output_range(kOutputsChannelB, kOutputsRangeMinus5To5V);
-	calibration_.save();
-	brain_.leds.off_all();
-	printf("App trim calibration saved, exiting\n");
 }

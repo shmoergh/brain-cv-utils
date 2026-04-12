@@ -7,7 +7,6 @@
 #include "brain/include/leds.h"
 #include "brain/include/outputs.h"
 #include "brain/include/pots.h"
-#include "calibration.h"
 #include "led-controller.h"
 #include "voltage-smoother.h"
 
@@ -15,7 +14,7 @@ class SlewLimiter {
 public:
 	SlewLimiter();
 
-	void update(Pots& pots, Inputs& cv_in, Outputs& cv_out, Calibration& calibration,
+	void update(Pots& pots, Inputs& cv_in, Outputs& cv_out,
 				bool button_b_pressed, Leds& leds, LedController& led_controller);
 
 private:

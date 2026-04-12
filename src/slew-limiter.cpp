@@ -41,7 +41,7 @@ SlewLimiter::SlewLimiter()
 	  button_b_prev_(false) {}
 
 void SlewLimiter::update(Pots& pots, Inputs& cv_in, Outputs& cv_out,
-						  Calibration& calibration, bool button_b_pressed,
+						  bool button_b_pressed,
 						  Leds& leds, LedController& led_controller) {
 	// Button B release: toggle linked mode
 	if (button_b_prev_ && !button_b_pressed) {
@@ -98,13 +98,9 @@ void SlewLimiter::update(Pots& pots, Inputs& cv_in, Outputs& cv_out,
 	const int32_t target_b_mv =
 		fixed_point::clamp_i32(current_ch2_mv_ + kCenterMillivolts, 0, kMaxMillivolts);
 
-	// Apply output calibration in DAC domain to match other CV passthrough-like modes.
+	// Convert from bipolar signal into DAC domain.
 	int32_t dac_a = (target_a_mv * kDacMax + (kMaxMillivolts / 2)) / kMaxMillivolts;
 	int32_t dac_b = (target_b_mv * kDacMax + (kMaxMillivolts / 2)) / kMaxMillivolts;
-	dac_a = dac_a * (Calibration::kCalibScale + calibration.gain_trim_a()) / Calibration::kCalibScale;
-	dac_b = dac_b * (Calibration::kCalibScale + calibration.gain_trim_b()) / Calibration::kCalibScale;
-	dac_a += calibration.offset_trim_a();
-	dac_b += calibration.offset_trim_b();
 	dac_a = fixed_point::clamp_i32(dac_a, 0, kDacMax);
 	dac_b = fixed_point::clamp_i32(dac_b, 0, kDacMax);
 
