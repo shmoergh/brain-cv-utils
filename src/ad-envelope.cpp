@@ -17,19 +17,16 @@ AdEnvelope::AdEnvelope()
 	  button_b_prev_(false),
 	  pulse_triggered_(false) {}
 
-void AdEnvelope::init(brain::io::Pulse& pulse) {
-	pulse.on_rise([this]() {
+void AdEnvelope::init(Inputs& pulse_in) {
+	pulse_in.pulse_on_rise([this]() {
 		pulse_triggered_ = true;
 	});
 }
 
-void AdEnvelope::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
-						 brain::io::AudioCvOut& cv_out, brain::io::Pulse& pulse,
+void AdEnvelope::update(Pots& pots, Inputs& inputs, Outputs& outputs,
 						 Calibration& calibration, bool button_b_pressed,
-						 brain::ui::Leds& leds, LedController& led_controller) {
+						 Leds& leds, LedController& led_controller) {
 	(void)calibration;
-
-	pulse.poll();
 
 	uint32_t now_us = time_us_32();
 
@@ -41,8 +38,10 @@ void AdEnvelope::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
 	// Trigger detection: per-channel gate rising edges, manual button, and pulse-in.
 	bool trigger_a = false;
 	bool trigger_b = false;
-	const bool gate_a_high = cv_in.get_voltage_channel_a() > kGateThresholdV;
-	const bool gate_b_high = cv_in.get_voltage_channel_b() > kGateThresholdV;
+	const bool gate_a_high =
+		static_cast<float>(inputs.get_voltage_millivolts_channel_a()) / 1000.0f > kGateThresholdV;
+	const bool gate_b_high =
+		static_cast<float>(inputs.get_voltage_millivolts_channel_b()) / 1000.0f > kGateThresholdV;
 	if (!envelope_a_.gate_prev_high && gate_a_high) {
 		trigger_a = true;
 	}
@@ -73,7 +72,7 @@ void AdEnvelope::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
 
 	const bool eoc_a = process_envelope(envelope_a_, now_us, decay_us, shape_q15);
 	const bool eoc_b = process_envelope(envelope_b_, now_us, decay_us, shape_q15);
-	pulse.set(eoc_a || eoc_b);
+	outputs.pulse_set(eoc_a || eoc_b);
 
 	// Clamp and convert unipolar envelope signal (0..+5V) into DAC domain around +5V center.
 	envelope_a_.envelope_q15 = fixed_point::clamp_i32(envelope_a_.envelope_q15, 0, kQ15One);
@@ -89,8 +88,10 @@ void AdEnvelope::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
 	if (out_b_voltage < 0.0f) out_b_voltage = 0.0f;
 	if (out_b_voltage > kMaxDacVoltageV) out_b_voltage = kMaxDacVoltageV;
 
-	cv_out.set_voltage_calibrated(brain::io::AudioCvOutChannel::kChannelA, out_a_voltage);
-	cv_out.set_voltage_calibrated(brain::io::AudioCvOutChannel::kChannelB, out_b_voltage);
+	const int32_t out_a_mv = static_cast<int32_t>(out_a_voltage * 1000.0f + 0.5f);
+	const int32_t out_b_mv = static_cast<int32_t>(out_b_voltage * 1000.0f + 0.5f);
+	outputs.set_voltage_calibrated_millivolts(kOutputsChannelA, out_a_mv - 5000);
+	outputs.set_voltage_calibrated_millivolts(kOutputsChannelB, out_b_mv - 5000);
 	led_controller.render_output_vu(leds, out_a_voltage, out_b_voltage);
 }
 

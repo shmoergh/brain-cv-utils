@@ -11,12 +11,7 @@
 #include "noise.h"
 #include "precision-adder.h"
 #include "slew-limiter.h"
-#include "brain-io/audio-cv-in.h"
-#include "brain-io/audio-cv-out.h"
-#include "brain-io/pulse.h"
-#include "brain-ui/button.h"
-#include "brain-ui/leds.h"
-#include "brain-ui/pots.h"
+#include "brain/brain.h"
 
 constexpr uint8_t kNumModes = 6;
 
@@ -46,13 +41,7 @@ private:
 	void exit_calibration();
 
 	// Hardware
-	brain::ui::Button button_a_;
-	brain::ui::Button button_b_;
-	brain::ui::Leds leds_;
-	brain::ui::Pots pots_;
-	brain::io::AudioCvIn cv_in_;
-	brain::io::AudioCvOut cv_out_;
-	brain::io::Pulse pulse_;
+	Brain brain_;
 
 	// Shared calibration
 	Calibration calibration_;
@@ -72,6 +61,7 @@ private:
 	bool button_b_pressed_;
 	bool calibration_active_;
 	bool button_a_release_event_;
+	bool initialized_;
 
 	// Long press detection for entering calibration
 	uint32_t both_pressed_since_;  // timestamp when both buttons pressed, 0 if not

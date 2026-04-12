@@ -4,13 +4,18 @@
 #include <cstdint>
 #include <cstdio>
 
-#include "brain-storage/storage.h"
 #include "pico/time.h"
 
 namespace {
 
 int16_t clamp16(int16_t v, int16_t lo, int16_t hi) {
 	return v < lo ? lo : (v > hi ? hi : v);
+}
+
+int32_t volts_to_millivolts(float volts) {
+	if (volts <= 0.0f) return 0;
+	if (volts >= 10.0f) return 10000;
+	return static_cast<int32_t>(volts * 1000.0f + 0.5f);
 }
 
 constexpr uint32_t kMagic = 0x544C4143;	 // "CALT"
@@ -46,12 +51,12 @@ Calibration::Calibration()
 	  offset_trim_a_(0),
 	  offset_trim_b_(0) {}
 
-void Calibration::init() {
+void Calibration::init(Storage& storage) {
+	storage_ = &storage;
 	load_from_app_blob();
 }
 
-void Calibration::update_from_pots(brain::ui::Pots& pots,
-								   bool button_a_held, bool button_b_held) {
+void Calibration::update_from_pots(Pots& pots, bool button_a_held, bool button_b_held) {
 	if (button_a_held) {
 		// Hold A + Pot 3 -> offset A
 		offset_trim_a_ = pot_to_offset_trim(pots.get(2), kOffsetTrimMin, kOffsetTrimMax);
@@ -69,10 +74,11 @@ void Calibration::save() {
 	save_to_app_blob();
 }
 
-void Calibration::process_passthrough(brain::io::AudioCvIn& cv_in,
-									  brain::io::AudioCvOut& cv_out) const {
-	const float in_a = cv_in.get_voltage_channel_a();
-	const float in_b = cv_in.get_voltage_channel_b();
+void Calibration::process_passthrough(Inputs& inputs, Outputs& outputs) const {
+	const float in_a =
+		static_cast<float>(inputs.get_voltage_millivolts_channel_a()) / 1000.0f;
+	const float in_b =
+		static_cast<float>(inputs.get_voltage_millivolts_channel_b()) / 1000.0f;
 
 	constexpr float kDacMax = 4095.0f;
 	constexpr float kOffsetTrimToVolts = 10.0f / kDacMax;
@@ -88,11 +94,11 @@ void Calibration::process_passthrough(brain::io::AudioCvIn& cv_in,
 	out_a = out_a < 0.0f ? 0.0f : (out_a > 10.0f ? 10.0f : out_a);
 	out_b = out_b < 0.0f ? 0.0f : (out_b > 10.0f ? 10.0f : out_b);
 
-	cv_out.set_voltage_calibrated(brain::io::AudioCvOutChannel::kChannelA, out_a);
-	cv_out.set_voltage_calibrated(brain::io::AudioCvOutChannel::kChannelB, out_b);
+	outputs.set_voltage_calibrated_millivolts(kOutputsChannelA, volts_to_millivolts(out_a));
+	outputs.set_voltage_calibrated_millivolts(kOutputsChannelB, volts_to_millivolts(out_b));
 }
 
-void Calibration::update_leds(brain::ui::Leds& leds) {
+void Calibration::update_leds(Leds& leds) {
 	// Blink all LEDs
 	uint32_t now = time_us_32();
 	uint32_t phase = (now / kBlinkPeriodUs) % 2;
@@ -107,12 +113,16 @@ void Calibration::update_leds(brain::ui::Leds& leds) {
 }
 
 void Calibration::load_from_app_blob() {
+	if (!storage_) {
+		return;
+	}
+
 	CalibrationAppBlobV1 blob{};
 	size_t actual_size = 0;
-	const brain::storage::StorageStatus status =
-		brain::storage::read_app_blob(&blob, sizeof(blob), &actual_size);
+	const StorageStatus status =
+		storage_->read_app_blob(&blob, sizeof(blob), &actual_size);
 
-	if (status != brain::storage::StorageStatus::kOk ||
+	if (status != kStorageStatusOk ||
 		actual_size != sizeof(blob) ||
 		blob.magic != kMagic ||
 		blob.version != kVersion) {
@@ -130,6 +140,10 @@ void Calibration::load_from_app_blob() {
 }
 
 void Calibration::save_to_app_blob() const {
+	if (!storage_) {
+		return;
+	}
+
 	CalibrationAppBlobV1 blob{};
 	blob.magic = kMagic;
 	blob.version = kVersion;
@@ -138,9 +152,8 @@ void Calibration::save_to_app_blob() const {
 	blob.offset_trim_a = offset_trim_a_;
 	blob.offset_trim_b = offset_trim_b_;
 
-	const brain::storage::StorageStatus status =
-		brain::storage::write_app_blob(&blob, sizeof(blob));
-	if (status != brain::storage::StorageStatus::kOk) {
+	const StorageStatus status = storage_->write_app_blob(&blob, sizeof(blob));
+	if (status != kStorageStatusOk) {
 		printf("Calibration app blob save failed: %d\n", static_cast<int>(status));
 	}
 }

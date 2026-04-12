@@ -20,7 +20,7 @@ bool LedController::is_mode_override_active(uint32_t now_us) const {
 	return static_cast<int32_t>(now_us - mode_led_override_until_us_) < 0;
 }
 
-void LedController::render_mode_change(brain::ui::Leds& leds, uint8_t mode_index,
+void LedController::render_mode_change(Leds& leds, uint8_t mode_index,
 									   uint8_t num_modes, uint32_t now_us) const {
 	const uint32_t elapsed = now_us - mode_led_override_started_us_;
 	const uint32_t phase = elapsed / kModeLedBlinkHalfPeriodUs;
@@ -40,7 +40,7 @@ void LedController::render_mode_change(brain::ui::Leds& leds, uint8_t mode_index
 	}
 }
 
-void LedController::render_output_vu(brain::ui::Leds& leds, float out_a_voltage,
+void LedController::render_output_vu(Leds& leds, float out_a_voltage,
 									 float out_b_voltage) const {
 	// Output domain is 0..10V with 5V as bipolar center.
 	const float mag_a = clampf(out_a_voltage >= 5.0f ? out_a_voltage - 5.0f : 5.0f - out_a_voltage, 0.0f, 5.0f);

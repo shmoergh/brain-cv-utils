@@ -3,16 +3,17 @@
 
 #include <cstdint>
 
-#include "brain-io/audio-cv-in.h"
-#include "brain-io/audio-cv-out.h"
-#include "brain-ui/leds.h"
-#include "brain-ui/pots.h"
+#include "brain/include/inputs.h"
+#include "brain/include/leds.h"
+#include "brain/include/outputs.h"
+#include "brain/include/pots.h"
+#include "brain/include/storage.h"
 
 class Calibration {
 public:
 	Calibration();
 
-	void init();
+	void init(Storage& storage);
 
 	// Getters
 	int16_t gain_trim_a() const { return gain_trim_a_; }
@@ -24,19 +25,17 @@ public:
 	// base mode: Pot 1 = scale A, Pot 2 = scale B
 	// hold Button A + Pot 3 = offset A
 	// hold Button B + Pot 3 = offset B
-	void update_from_pots(brain::ui::Pots& pots,
-						  bool button_a_held, bool button_b_held);
+	void update_from_pots(Pots& pots, bool button_a_held, bool button_b_held);
 
 	// Save app-level trim state to SDK app blob storage
 	void save();
 
 	// Calibration passthrough: input A->output A, input B->output B.
 	// Uses SDK voltage reads and applies live gain/offset trims.
-	void process_passthrough(brain::io::AudioCvIn& cv_in,
-							 brain::io::AudioCvOut& cv_out) const;
+	void process_passthrough(Inputs& inputs, Outputs& outputs) const;
 
 	// Blink all LEDs for calibration mode visual feedback
-	void update_leds(brain::ui::Leds& leds);
+	void update_leds(Leds& leds);
 
 	// Constants for modes that apply calibration
 	static constexpr int32_t kCalibScale = 10000;
@@ -51,6 +50,7 @@ private:
 	int16_t gain_trim_b_;
 	int16_t offset_trim_a_;
 	int16_t offset_trim_b_;
+	Storage* storage_ = nullptr;
 
 	void load_from_app_blob();
 	void save_to_app_blob() const;

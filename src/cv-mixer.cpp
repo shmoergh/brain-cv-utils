@@ -6,11 +6,10 @@ float clampf(float v, float lo, float hi) {
 }
 }
 
-void CvMixer::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
-					  brain::io::AudioCvOut& cv_out, brain::ui::Leds& leds,
+void CvMixer::update(Pots& pots, Inputs& cv_in, Outputs& cv_out, Leds& leds,
 					  LedController& led_controller) {
-	float in_a = cv_in.get_voltage_channel_a();
-	float in_b = cv_in.get_voltage_channel_b();
+	float in_a = static_cast<float>(cv_in.get_voltage_millivolts_channel_a()) / 1000.0f;
+	float in_b = static_cast<float>(cv_in.get_voltage_millivolts_channel_b()) / 1000.0f;
 
 	float level_a = static_cast<float>(pots.get(kPotLevelA)) / 255.0f;
 	float level_b = static_cast<float>(pots.get(kPotLevelB)) / 255.0f;
@@ -22,7 +21,8 @@ void CvMixer::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
 
 	const float out_a_voltage = out;
 	const float out_b_voltage = out;
-	cv_out.set_voltage_calibrated(brain::io::AudioCvOutChannel::kChannelA, out_a_voltage);
-	cv_out.set_voltage_calibrated(brain::io::AudioCvOutChannel::kChannelB, out_b_voltage);
+	const int32_t out_mv = static_cast<int32_t>(out * 1000.0f + 0.5f);
+	cv_out.set_voltage_calibrated_millivolts(kOutputsChannelA, out_mv - 5000);
+	cv_out.set_voltage_calibrated_millivolts(kOutputsChannelB, out_mv - 5000);
 	led_controller.render_output_vu(leds, out_a_voltage, out_b_voltage);
 }

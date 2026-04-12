@@ -4,10 +4,15 @@ namespace {
 int16_t clamp16(int16_t v, int16_t lo, int16_t hi) {
 	return v < lo ? lo : (v > hi ? hi : v);
 }
+
+int32_t voltage_to_signal_millivolts(float voltage) {
+	float clamped = voltage < 0.0f ? 0.0f : (voltage > 10.0f ? 10.0f : voltage);
+	int32_t dac_millivolts = static_cast<int32_t>(clamped * 1000.0f + 0.5f);
+	return dac_millivolts - 5000;
+}
 }
 
-void Attenuverter::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
-						  brain::io::AudioCvOut& cv_out, brain::ui::Leds& leds,
+void Attenuverter::update(Pots& pots, Inputs& cv_in, Outputs& cv_out, Leds& leds,
 						  LedController& led_controller) {
 	// Pots: 0-255, ADC/DAC: 0-4095
 
@@ -33,7 +38,7 @@ void Attenuverter::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
 
 	const float out_a_voltage = static_cast<float>(dac_ch1) * 10.0f / kDacMax;
 	const float out_b_voltage = static_cast<float>(dac_ch2) * 10.0f / kDacMax;
-	cv_out.set_voltage_calibrated(brain::io::AudioCvOutChannel::kChannelA, out_a_voltage);
-	cv_out.set_voltage_calibrated(brain::io::AudioCvOutChannel::kChannelB, out_b_voltage);
+	cv_out.set_voltage_calibrated_millivolts(kOutputsChannelA, voltage_to_signal_millivolts(out_a_voltage));
+	cv_out.set_voltage_calibrated_millivolts(kOutputsChannelB, voltage_to_signal_millivolts(out_b_voltage));
 	led_controller.render_output_vu(leds, out_a_voltage, out_b_voltage);
 }

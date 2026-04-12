@@ -3,15 +3,15 @@
 
 #include <cstdint>
 
-#include "brain-ui/leds.h"
+#include "brain/include/leds.h"
 
 class LedController {
 public:
 	void start_mode_change(uint32_t now_us);
 	bool is_mode_override_active(uint32_t now_us) const;
-	void render_mode_change(brain::ui::Leds& leds, uint8_t mode_index,
+	void render_mode_change(Leds& leds, uint8_t mode_index,
 							uint8_t num_modes, uint32_t now_us) const;
-	void render_output_vu(brain::ui::Leds& leds, float out_a_voltage,
+	void render_output_vu(Leds& leds, float out_a_voltage,
 						  float out_b_voltage) const;
 
 private:

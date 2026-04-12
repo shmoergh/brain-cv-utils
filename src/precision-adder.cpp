@@ -6,10 +6,9 @@ int32_t clamp32(int32_t v, int32_t lo, int32_t hi) {
 }
 }
 
-void PrecisionAdder::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
-							brain::io::AudioCvOut& cv_out,
+void PrecisionAdder::update(Pots& pots, Inputs& cv_in, Outputs& cv_out,
 							Calibration& calibration, bool button_b_pressed,
-							brain::ui::Leds& leds, LedController& led_controller) {
+							Leds& leds, LedController& led_controller) {
 	(void)button_b_pressed;
 	constexpr int32_t kMaxMillivolts = 10000;
 	// Pot 1/2: octave offset — map 0-255 to -4..+4 (9 steps)
@@ -54,7 +53,7 @@ void PrecisionAdder::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
 
 	const float out_a_voltage = static_cast<float>(smooth_a_mv) / 1000.0f;
 	const float out_b_voltage = static_cast<float>(smooth_b_mv) / 1000.0f;
-	cv_out.set_voltage_calibrated(brain::io::AudioCvOutChannel::kChannelA, out_a_voltage);
-	cv_out.set_voltage_calibrated(brain::io::AudioCvOutChannel::kChannelB, out_b_voltage);
+	cv_out.set_voltage_calibrated_millivolts(kOutputsChannelA, smooth_a_mv - 5000);
+	cv_out.set_voltage_calibrated_millivolts(kOutputsChannelB, smooth_b_mv - 5000);
 	led_controller.render_output_vu(leds, out_a_voltage, out_b_voltage);
 }

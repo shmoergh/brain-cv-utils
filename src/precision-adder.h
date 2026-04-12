@@ -3,20 +3,18 @@
 
 #include <cstdint>
 
+#include "brain/include/inputs.h"
+#include "brain/include/leds.h"
+#include "brain/include/outputs.h"
+#include "brain/include/pots.h"
 #include "calibration.h"
-#include "brain-io/audio-cv-in.h"
-#include "brain-io/audio-cv-out.h"
-#include "brain-ui/leds.h"
-#include "brain-ui/pots.h"
 #include "led-controller.h"
 #include "voltage-smoother.h"
 
 class PrecisionAdder {
 public:
-	void update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
-				brain::io::AudioCvOut& cv_out,
-				Calibration& calibration, bool button_b_pressed,
-				brain::ui::Leds& leds, LedController& led_controller);
+	void update(Pots& pots, Inputs& cv_in, Outputs& cv_out, Calibration& calibration,
+				bool button_b_pressed, Leds& leds, LedController& led_controller);
 
 private:
 	static constexpr uint8_t kPotOctaveCh1 = 0;
