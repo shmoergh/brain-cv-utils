@@ -44,7 +44,6 @@ void CvUtils::init() {
 
 	// Inputs DMA keeps ADC round-robin enabled for CV channels, which interferes
 	// with the pot mux reader on ADC0. Keep inputs in direct-read mode here.
-	brain_.set_audio_cv_dma_enabled(false);
 	if (!init_component(brain_.init_inputs(), "inputs")) return;
 	if (!init_component(brain_.init_outputs(), "outputs")) return;
 
