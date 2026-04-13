@@ -91,26 +91,25 @@ uint16_t Noise::quantize(uint16_t dac_value) const {
 	return static_cast<uint16_t>(result > kDacMax ? kDacMax : result);
 }
 
-void Noise::render_scale_select(brain::ui::Leds& leds, uint8_t scale_index) {
+void Noise::render_scale_select(Leds& leds, uint8_t scale_index) {
 	leds.off_all();
 	if (scale_index < 6) {
 		leds.on(scale_index);
 	}
 }
 
-void Noise::update(brain::ui::Pots& pots, brain::io::AudioCvOut& cv_out,
-				   brain::io::Pulse& pulse,
-				   bool button_b_pressed, brain::ui::Leds& leds,
+void Noise::update(Pots& pots, Inputs& inputs, Outputs& outputs,
+				   bool button_b_pressed, Leds& leds,
 				   LedController& led_controller) {
 	(void)led_controller;
 	uint32_t now = time_us_32();
 
 	// Turn pulse off after the configured width.
 	if (pulse_active_ && static_cast<int32_t>(now - pulse_off_at_us_) >= 0) {
-		pulse.set(false);
+		outputs.pulse_set(false);
 		pulse_active_ = false;
 	}
-	bool pulse_in_high = pulse.read();
+	bool pulse_in_high = inputs.pulse_read();
 	bool pulse_in_rising = pulse_in_high && !pulse_in_prev_high_;
 	pulse_in_prev_high_ = pulse_in_high;
 
@@ -163,8 +162,8 @@ void Noise::update(brain::ui::Pots& pots, brain::io::AudioCvOut& cv_out,
 		// Emit a short pulse whenever channel A value changes.
 		if (value_changed) {
 			// Force a fresh edge even if a previous pulse is still active.
-			pulse.set(false);
-			pulse.set(true);
+			outputs.pulse_set(false);
+			outputs.pulse_set(true);
 			pulse_active_ = true;
 			pulse_off_at_us_ = now + kPulseWidthUs;
 		}
@@ -184,6 +183,8 @@ void Noise::update(brain::ui::Pots& pots, brain::io::AudioCvOut& cv_out,
 	// Output
 	float voltage_a = static_cast<float>(ch_a_.current_value) * 10.0f / static_cast<float>(kDacMax);
 	float voltage_b = static_cast<float>(ch_b_.current_value) * 10.0f / static_cast<float>(kDacMax);
-	cv_out.set_voltage_calibrated(brain::io::AudioCvOutChannel::kChannelA, voltage_a);
-	cv_out.set_voltage_calibrated(brain::io::AudioCvOutChannel::kChannelB, voltage_b);
+	const int32_t mv_a = static_cast<int32_t>(voltage_a * 1000.0f + 0.5f);
+	const int32_t mv_b = static_cast<int32_t>(voltage_b * 1000.0f + 0.5f);
+	outputs.set_voltage_calibrated_millivolts(kOutputsChannelA, mv_a - 5000);
+	outputs.set_voltage_calibrated_millivolts(kOutputsChannelB, mv_b - 5000);
 }

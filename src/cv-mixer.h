@@ -3,16 +3,15 @@
 
 #include <cstdint>
 
-#include "brain-io/audio-cv-in.h"
-#include "brain-io/audio-cv-out.h"
-#include "brain-ui/leds.h"
-#include "brain-ui/pots.h"
+#include "brain/include/inputs.h"
+#include "brain/include/leds.h"
+#include "brain/include/outputs.h"
+#include "brain/include/pots.h"
 #include "led-controller.h"
 
 class CvMixer {
 public:
-	void update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
-				brain::io::AudioCvOut& cv_out, brain::ui::Leds& leds,
+	void update(Pots& pots, Inputs& cv_in, Outputs& cv_out, Leds& leds,
 				LedController& led_controller);
 
 private:

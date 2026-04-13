@@ -108,19 +108,6 @@ Mode-specific actions:
 - **AD Envelope**: press to manually trigger both channels.
 - **Noise**: hold to enter scale-select (Pot 3 chooses scale).
 
-### Calibration Mode
-
-**Hold A + B (long press, ~1.5s)** — enters calibration mode. All LEDs blink.
-
-In calibration mode:
-- **Pot 1** — Output A scale (gain trim)
-- **Pot 2** — Output B scale (gain trim)
-- **Hold Button A + Pot 3** — Output A offset
-- **Hold Button B + Pot 3** — Output B offset
-
-**Tap A + B together** — exits calibration mode (saves app trim data to SDK app storage).
-
-App trim values persist across power cycles and are currently applied by **Precision Adder** and **Slew Limiter**.
 Hardware CV calibration is loaded from Brain SDK calibration storage at startup and applied to CV output writes;
 if calibration is missing/corrupt, output safely falls back to raw voltage writes.
 

@@ -3,23 +3,20 @@
 
 #include <cstdint>
 
-#include "calibration.h"
+#include "brain/include/inputs.h"
+#include "brain/include/leds.h"
+#include "brain/include/outputs.h"
+#include "brain/include/pots.h"
 #include "led-controller.h"
-#include "brain-io/audio-cv-in.h"
-#include "brain-io/audio-cv-out.h"
-#include "brain-io/pulse.h"
-#include "brain-ui/leds.h"
-#include "brain-ui/pots.h"
 
 class AdEnvelope {
 public:
 	AdEnvelope();
 
-	void init(brain::io::Pulse& pulse);
-	void update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
-				brain::io::AudioCvOut& cv_out, brain::io::Pulse& pulse,
-				Calibration& calibration, bool button_b_pressed,
-				brain::ui::Leds& leds, LedController& led_controller);
+	void init(Inputs& pulse_in);
+	void update(Pots& pots, Inputs& inputs, Outputs& outputs,
+				bool button_b_pressed,
+				Leds& leds, LedController& led_controller);
 
 private:
 	enum class Stage : uint8_t {

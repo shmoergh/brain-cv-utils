@@ -11,17 +11,19 @@ if [[ "$1" == "--push" ]]; then
   PUSH=true
 fi
 
+SDK_BRANCH="${SDK_BRANCH:-2.0}"
+
 echo "Updating brain-sdk submodule..."
 echo ""
 
 cd brain-sdk
 git fetch origin
-git checkout main
-git pull origin main
+git checkout "$SDK_BRANCH"
+git pull origin "$SDK_BRANCH"
 cd ..
 
 echo ""
-echo "✓ brain-sdk updated to latest version"
+echo "✓ brain-sdk updated to latest version on branch ${SDK_BRANCH}"
 echo ""
 
 if [ "$PUSH" = true ]; then

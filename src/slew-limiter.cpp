@@ -40,10 +40,9 @@ SlewLimiter::SlewLimiter()
 	  linked_(false),
 	  button_b_prev_(false) {}
 
-void SlewLimiter::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
-						  brain::io::AudioCvOut& cv_out,
-						  Calibration& calibration, bool button_b_pressed,
-						  brain::ui::Leds& leds, LedController& led_controller) {
+void SlewLimiter::update(Pots& pots, Inputs& cv_in, Outputs& cv_out,
+						  bool button_b_pressed,
+						  Leds& leds, LedController& led_controller) {
 	// Button B release: toggle linked mode
 	if (button_b_prev_ && !button_b_pressed) {
 		linked_ = !linked_;
@@ -76,8 +75,8 @@ void SlewLimiter::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
 	const uint16_t fall_coeff_q15 = compute_coeff_q15(fall_rate_q15, kMaxSlewUs);
 
 	// Read inputs and apply slew
-	const float in_ch1_v = cv_in.get_voltage_channel_a();
-	const float in_ch2_v = cv_in.get_voltage_channel_b();
+	const float in_ch1_v = static_cast<float>(cv_in.get_voltage_millivolts_channel_a()) / 1000.0f;
+	const float in_ch2_v = static_cast<float>(cv_in.get_voltage_millivolts_channel_b()) / 1000.0f;
 	const int32_t in_ch1_mv_unclamped =
 		static_cast<int32_t>(in_ch1_v * static_cast<float>(kMillivoltsPerVolt));
 	const int32_t in_ch2_mv_unclamped =
@@ -99,13 +98,9 @@ void SlewLimiter::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
 	const int32_t target_b_mv =
 		fixed_point::clamp_i32(current_ch2_mv_ + kCenterMillivolts, 0, kMaxMillivolts);
 
-	// Apply output calibration in DAC domain to match other CV passthrough-like modes.
+	// Convert from bipolar signal into DAC domain.
 	int32_t dac_a = (target_a_mv * kDacMax + (kMaxMillivolts / 2)) / kMaxMillivolts;
 	int32_t dac_b = (target_b_mv * kDacMax + (kMaxMillivolts / 2)) / kMaxMillivolts;
-	dac_a = dac_a * (Calibration::kCalibScale + calibration.gain_trim_a()) / Calibration::kCalibScale;
-	dac_b = dac_b * (Calibration::kCalibScale + calibration.gain_trim_b()) / Calibration::kCalibScale;
-	dac_a += calibration.offset_trim_a();
-	dac_b += calibration.offset_trim_b();
 	dac_a = fixed_point::clamp_i32(dac_a, 0, kDacMax);
 	dac_b = fixed_point::clamp_i32(dac_b, 0, kDacMax);
 
@@ -119,8 +114,8 @@ void SlewLimiter::update(brain::ui::Pots& pots, brain::io::AudioCvIn& cv_in,
 		static_cast<float>(calibrated_target_b_mv) / static_cast<float>(kMillivoltsPerVolt);
 	const float out_a_voltage = static_cast<float>(out_a_mv) / static_cast<float>(kMillivoltsPerVolt);
 	const float out_b_voltage = static_cast<float>(out_b_mv) / static_cast<float>(kMillivoltsPerVolt);
-	cv_out.set_voltage_calibrated(brain::io::AudioCvOutChannel::kChannelA, out_a_voltage);
-	cv_out.set_voltage_calibrated(brain::io::AudioCvOutChannel::kChannelB, out_b_voltage);
+	cv_out.set_voltage_calibrated_millivolts(kOutputsChannelA, out_a_mv - 5000);
+	cv_out.set_voltage_calibrated_millivolts(kOutputsChannelB, out_b_mv - 5000);
 	led_controller.render_output_vu(leds, out_a_voltage, out_b_voltage);
 
 	if (kEnableSlewDebug) {
