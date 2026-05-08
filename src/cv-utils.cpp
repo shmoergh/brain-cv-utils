@@ -47,9 +47,6 @@ void CvUtils::init() {
 	if (!init_component(brain_.init_inputs(), "inputs")) return;
 	if (!init_component(brain_.init_outputs(), "outputs")) return;
 
-	brain_.outputs.set_output_range(kOutputsChannelA, kOutputsRangeMinus5To5V);
-	brain_.outputs.set_output_range(kOutputsChannelB, kOutputsRangeMinus5To5V);
-
 	const bool sdk_calibration_loaded = brain_.outputs.load_calibration_from_flash();
 	printf("Storage layout protected: %s\n",
 		   brain_.storage.is_layout_protected() ? "yes" : "no");
@@ -127,4 +124,15 @@ void CvUtils::next_mode() {
 void CvUtils::set_mode(Mode mode) {
 	current_mode_ = mode;
 	brain_.leds.off_all();
+
+	// Precision Adder and Slew Limiter run the DAC in unipolar 0..10V because
+	// the SDK's calibration table is generated in that range; the bipolar
+	// coupling subtraction has its own analog tolerance the cal table doesn't
+	// cover. All other modes keep the bipolar -5..+5V range they expect.
+	const AudioCvOutRange range =
+		(mode == Mode::kPrecisionAdder || mode == Mode::kSlew)
+			? kOutputsRange0To10V
+			: kOutputsRangeMinus5To5V;
+	brain_.outputs.set_output_range(kOutputsChannelA, range);
+	brain_.outputs.set_output_range(kOutputsChannelB, range);
 }

@@ -55,3 +55,19 @@ void LedController::render_output_vu(Leds& leds, float out_a_voltage,
 	leds.set_brightness(4, vu_brightness(mag_b, 1.0f, kZone));
 	leds.set_brightness(5, vu_brightness(mag_b, 2.0f, kZone));
 }
+
+void LedController::render_output_vu_unipolar(Leds& leds, float out_a_voltage,
+											  float out_b_voltage) const {
+	// 0V → all off, 10V → all on; linear fill across 3 LEDs per channel.
+	const float mag_a = clampf(out_a_voltage, 0.0f, 10.0f);
+	const float mag_b = clampf(out_b_voltage, 0.0f, 10.0f);
+	const float kZone = 10.0f / 3.0f;
+
+	leds.set_brightness(0, vu_brightness(mag_a, 0.0f, kZone));
+	leds.set_brightness(1, vu_brightness(mag_a, 1.0f, kZone));
+	leds.set_brightness(2, vu_brightness(mag_a, 2.0f, kZone));
+
+	leds.set_brightness(3, vu_brightness(mag_b, 0.0f, kZone));
+	leds.set_brightness(4, vu_brightness(mag_b, 1.0f, kZone));
+	leds.set_brightness(5, vu_brightness(mag_b, 2.0f, kZone));
+}
