@@ -2,11 +2,6 @@
 
 A multi-mode CV utility firmware for the [Brain](https://github.com/shmoergh/moduleur/tree/main/modules/07-brain) module in the [Shmøergh Moduleur](https://www.shmoergh.com/moduleur/).
 
-## Quick guide
-
-<img width="2840" height="4362" alt="image" src="https://github.com/user-attachments/assets/ccaaff7d-e211-4447-b3a2-cff29095acfd" />
-
-
 
 ## Modes
 
@@ -30,16 +25,16 @@ Add precise voltage offsets for octave transposition.
 
 | Control | Function |
 |---------|----------|
-| Pot 1 | CH1 octave offset — quantized −4V to +4V in 1V steps |
+| Pot 1 | CH1 octave offset — quantized 0..10V in 1V steps |
 | Pot 2 | CH2 octave offset — same as above |
-| Pot 3 | Fine tune — ±5 semitones, applied to both channels |
+| Pot 3 | Fine tune — 12 semitones, applied to both channels |
 | CV In A/B | Input signals (1V/oct) |
 | CV Out A/B | Input + offset (with calibration applied) |
 | LEDs 1–3 | CH1 output magnitude VU |
 | LEDs 4–6 | CH2 output magnitude VU |
 
 ### 3. Slew Limiter
-Smooth out CV transitions with independent rise and fall times.
+Smooth out 0..10V CV transitions with independent rise and fall times.
 
 | Control | Function |
 |---------|----------|
