@@ -13,6 +13,8 @@ public:
 							uint8_t num_modes, uint32_t now_us) const;
 	void render_output_vu(Leds& leds, float out_a_voltage,
 						  float out_b_voltage) const;
+	void render_output_vu_unipolar(Leds& leds, float out_a_voltage,
+								   float out_b_voltage) const;
 
 private:
 	static constexpr uint32_t kModeLedBlinkHalfPeriodUs = 100000;  // 100ms

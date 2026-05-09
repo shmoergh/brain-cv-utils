@@ -20,12 +20,15 @@ private:
 	static constexpr uint8_t kPotOctaveCh2 = 1;
 	static constexpr uint8_t kPotFineTune = 2;
 
-	static constexpr int32_t kMinSignalMillivolts = -5000;
-	static constexpr int32_t kMaxSignalMillivolts = 5000;
-	static constexpr int32_t kCenterMillivolts = 5000;
+	// Output runs in unipolar 0..10V (CvUtils::set_mode configures this for the
+	// Precision Adder mode). All knobs are positive-only so that "all pots at
+	// minimum" produces 0V at OUT.
+	static constexpr int32_t kMinDacMillivolts = 0;
+	static constexpr int32_t kMaxDacMillivolts = 10000;
 	static constexpr int32_t kMillivoltsPerOctave = 1000;
-	// Fine tune: ±5 semitones ~= ±0.417V
-	static constexpr int32_t kFineTuneMaxMillivolts = 417;
+	static constexpr uint8_t kOctaveStepCount = 9;  // 0V, 1V, …, 8V
+	// Fine tune: 0..+1V additive offset.
+	static constexpr int32_t kFineTuneMaxMillivolts = 1000;
 
 	// Anti-jitter smoothing (small deadband, no extra lag by default).
 	static constexpr int32_t kSmoothingDeadbandMv = 7;
